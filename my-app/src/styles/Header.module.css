@@ -1,24 +1,90 @@
-.cabecalho {
-    background-color: #2c3e50;
-    padding: 1rem 0;
-}
 
-nav ul {
+
+.header {
     display: flex;
-    justify-content: center;
-    list-style: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #fff;
+    color: #0D2B46;
+    font-family: Arial, sans-serif;
 }
 
-nav li {
-    margin: 0 15px;
+
+.logo h1 {
+    font-size: 1.5rem;
+    margin: 0;
 }
 
-nav a {
-    color: white;
+.nav{
+    display: flex;
+    gap: 20px;
+    color: #fff;
+}
+
+.nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.nav ul li{
+    margin-left: 20px;
+}
+.nav ul li {
+    margin-left: 20px;
+}
+
+.nav ul li a {
+    color: #0D2B46;
     text-decoration: none;
-    font-weight: bold;
+    font-size: 1rem;
 }
 
-nav a:hover {
-    color: #3498db;
+.nav ul li a:hover {
+    text-decoration: underline;
+    color: #0360D9;
+}
+
+.header__login {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+
+.login {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    background-color: #0360D9;
+    border: 2px solid #fff;
+    padding: 10px 20px;
+    border-radius: 40px;
+    transition: all 0.3s ease-in-out;
+    text-decoration: none;
+}
+
+.login:hover {
+    background-color: #fff;
+    color: #000;
+}
+
+
+.signup {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    background-color: #0360D9;
+    border: 2px solid #fff;
+    padding: 10px 20px;
+    border-radius: 40px;
+    transition: all 0.3s ease-in-out;
+    text-decoration: none;
+}
+
+.signup:hover {
+    background-color: #ccc;
+    border-color: #ccc;
 }

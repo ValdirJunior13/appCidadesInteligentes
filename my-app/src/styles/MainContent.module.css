@@ -1,0 +1,121 @@
+
+main {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.tituloSite {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.tituloSite h1 {
+    font-size: 2.5rem;
+    color: #333;
+}
+
+.tituloSite p {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+
+
+.barraBusca {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.buscaContainer {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+
+
+.caixaBusca {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 450px;
+    border: 2px solid #007bff;
+    border-radius: 25px;
+    background-color: white;
+    overflow: hidden;
+}
+
+.caixaBusca input {
+    flex: 1;
+    padding: 12px;
+    font-size: 1rem;
+    border: none;
+    outline: none;
+}
+.separator {
+    width: 1px;
+    height: 30px;
+    background-color: #ccc;
+}
+
+
+.dropdown {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 450px;
+}
+
+.dropdown li {
+    padding: 10px;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.dropdown li:hover {
+    background-color: #f0f0f0;
+}
+
+
+.infoSensores {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.primeiraInfo, .segundaInfo, .terceiraInfo {
+    flex: 1;
+    padding: 20px;
+    background-color: #e9e9e9;
+    margin: 0 10px;
+    border-radius: 8px;
+}
+
+.primeiraInfo h2, .segundaInfo h2, .terceiraInfo h2 {
+    font-size: 2rem;
+    color: #333;
+}
+
+.primeiraInfo p, .segundaInfo p, .terceiraInfo p {
+    font-size: 1rem;
+    color: #666;
+}

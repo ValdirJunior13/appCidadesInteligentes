@@ -1,60 +1,63 @@
+
 .footer {
-    background-color: #2c3e50;
-    color: white;
-    padding: 2rem;
+    background-color: #0360D9;
+    color: #fff;
+    padding: 40px 20px;
+    font-family: Arial, sans-serif;
+}
+
+.footer h1 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.footer p {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    text-align: center;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+.sobreNos {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
+    margin-top: 40px;
     flex-wrap: wrap;
 }
 
-.primeiraInfoFooter, .segundaInfoFooter, .terceiraInfoFooter {
-    flex: 1;
-    margin: 1rem;
-    min-width: 250px;
-}
-
-.primeiraInfoFooter h3, .segundaInfoFooter h3, .terceiraInfoFooter h3 {
+.sobreNos h2 {
     font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: #3498db;
+    margin-bottom: 15px;
 }
 
-.primeiraInfoFooter p {
-    font-size: 1rem;
-    line-height: 1.6;
-}
-
-.segundaInfoFooter ul, .terceiraInfoFooter ul {
-    list-style: none;
+.sobreNos ul {
+    list-style-type: none;
     padding: 0;
 }
 
-.segundaInfoFooter ul li, .terceiraInfoFooter ul li {
-    margin-bottom: 0.5rem;
+.sobreNos ul li {
+    margin-bottom: 10px;
 }
 
-.segundaInfoFooter ul li a, .terceiraInfoFooter ul li a {
-    color: white;
+.sobreNos ul li a {
+    color: #fff;
     text-decoration: none;
+    font-size: 1rem;
 }
 
-.segundaInfoFooter ul li a:hover, .terceiraInfoFooter ul li a:hover {
-    color: #3498db;
+.sobreNos ul li a:hover {
+    text-decoration: underline;
 }
 
-.terceiraInfoFooter ul li img {
-    vertical-align: middle;
-    margin-right: 10px;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .footer {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .primeiraInfoFooter, .segundaInfoFooter, .terceiraInfoFooter {
-        margin: 1rem 0;
-    }
+.footerBottom {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #0360D9;
+    font-size: 0.9rem;
 }

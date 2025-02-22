@@ -1,6 +1,17 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .cabecalho {
     margin-top: 20px;
     display: flex;
     justify-content: space-between; 
     
 }
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
