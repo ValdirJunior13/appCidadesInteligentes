@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 const InformacoesSecundarias = ({ imagem, alt, titulo, listaItens }) => {
     return (
     <section className="flex flex-col md:flex-row items-center gap-6 bg-gray-100 p-6 rounded-lg shadow-md">
-      {/* Imagem (diminuída e alinhada à esquerda) */}
+
     <div className="w-full md:w-1/3">
         <img
         src={imagem}
@@ -11,8 +11,6 @@ const InformacoesSecundarias = ({ imagem, alt, titulo, listaItens }) => {
         className="w-150 h-150 object-cover rounded-lg mx-auto md:mx-0" 
         />
     </div>
-
-      {/* Texto alinhado à direita */}
     <div className="w-full md:w-2/3 text-center md:text-center">
         <h2 className="text-2xl font-bold mb-4">{titulo}</h2>
         <ul className="space-y-2">
