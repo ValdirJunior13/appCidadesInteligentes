@@ -43,7 +43,7 @@ const CadastroComponent = () => {
         </div>
         <div className="w-full md:w-1/2 p-8">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Create an Account!
+            Crie sua Conta!
           </h2>
           <form onSubmit={handleSubmit}>
             <div className="mb-5">
@@ -136,20 +136,20 @@ const CadastroComponent = () => {
                 className="hover:shadow-form w-full rounded-md bg-blue-500 py-3 px-8 text-center text-base font-semibold text-white outline-none"
                 type="submit"
               >
-                Register Account
+                Registrar Conta
               </button>
             </div>
             <div className="mt-5">
-              <p className="text-red-500">Please choose a password.</p>
+              <p className="text-red-500">Mensagem de erro</p>
             </div>
             <div className="mt-5">
               <a href="/forgot-password" className="text-blue-500">
-                Forgot Password?
+                Esqueceu a Senha?
               </a>
             </div>
             <div className="mt-2">
               <a href="/login" className="text-blue-500">
-                Already have an account? Login
+                Já tem uma Conta? Login
               </a>
             </div>
           </form>

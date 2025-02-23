@@ -32,7 +32,6 @@ const handleSubmit = async (e) => {
 
     localStorage.setItem("token", data.token);
 
-      // Redirecionar para outra página
     window.location.href = "/dashboard";
     } catch (error) {
         console.error("Erro:", error);
@@ -95,7 +94,7 @@ return (
             type="submit"
             className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
-            Sign in
+            Entrar na conta
             </button>
         </div>
         </form>
