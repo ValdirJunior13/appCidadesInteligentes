@@ -2,11 +2,11 @@
 
 const CadastroComponent = () => {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="w-full flex items-center justify-center min-h-screen bg-gray-100">
       <div className="flex w-full max-w-4xl bg-white shadow-md rounded-lg overflow-hidden">
         <div className="w-1/2 hidden md:block">
           <img
-            src="URL_DA_SUA_IMAGEM"
+            src="    "
             alt="Imagem de Registro"
             className="object-cover w-full h-full"
           />
