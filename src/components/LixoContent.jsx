@@ -41,7 +41,7 @@ const LixoContent = () => {
             <InformacoesSecundarias
                 imagem="../src/assets/images/recycle-bin (1).png"
                 alt="Gestão de Águas Urbanas"
-                titulo="Por Que Escolher Nosso Sistema de Gestão de Águas?"
+                titulo="Por Que Escolher Nosso Sistema de Gestão de Lixo?"
                 listaItens={[
                     "Redução de custos operacionais na coleta de lixo.",
                     "Menos resíduos acumulados, evitando surtos de doenças.",

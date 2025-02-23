@@ -9,7 +9,7 @@ import Footer from "./components/FooterComponent";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro"
 import '../src/index.css';
-
+import Iluminacao from "./pages/Iluminacao";
 
 const App = () => {
     return (
@@ -21,6 +21,7 @@ const App = () => {
             <Route path="/lixo" element={<Lixo />} />
             <Route path="/login" element={<Login />} />
             <Route path ="/cadastro" element ={<Cadastro />}/>
+            <Route path ="/Iluminacao" element ={<Iluminacao />}/>
             </Routes>
         <Footer />
         </Router>
