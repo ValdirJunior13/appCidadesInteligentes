@@ -7,7 +7,8 @@ import Lixo from "./pages/Lixo";
 import Header from "./components/Header";
 import Footer from "./components/FooterComponent";
 import Login from "./pages/Login";
-import Cadastro from "./pages/Cadastro"
+import Cadastro from "./pages/Cadastro";
+import Data from "./pages/Data";
 import '../src/index.css';
 import Iluminacao from "./pages/Iluminacao";
 
@@ -21,7 +22,8 @@ const App = () => {
             <Route path="/lixo" element={<Lixo />} />
             <Route path="/login" element={<Login />} />
             <Route path ="/cadastro" element ={<Cadastro />}/>
-            <Route path ="/Iluminacao" element ={<Iluminacao />}/>
+            <Route path ="/iluminacao" element ={<Iluminacao />}/>
+            <Route path ="/data" element ={<Data />}/>
             </Routes>
         <Footer />
         </Router>

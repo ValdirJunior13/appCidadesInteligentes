@@ -2,8 +2,8 @@ import PropTypes from "prop-types";
 
 const InformacoesSecundarias = ({ imagem, alt, titulo, listaItens }) => {
 return (
-    <section className="flex flex-col md:flex-row items-center gap-6 bg-gray-100 p-6 rounded-lg shadow-md">
-      {/* Seção de imagem */}
+<section className="flex flex-col md:flex-row items-center gap-6 bg-gray-100 p-6 rounded-lg shadow-md">
+    {/* Seção de imagem */}
     <div className="w-full md:w-1/3">
         <img
         src={imagem}
@@ -32,7 +32,7 @@ return (
             Saiba Mais
             <span className="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-200">
             →
-            </span>
+        </span>
         </a>
         </p>
     </div>
