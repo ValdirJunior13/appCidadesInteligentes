@@ -33,10 +33,10 @@ const CadastroComponent = () => {
 
   return (
     <div className="w-full flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="flex w-full max-w-4xl bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="flex w-full max-w-5x2 bg-white shadow-md rounded-lg overflow-hidden">
         <div className="w-1/2 hidden md:block">
           <img
-            src=""
+            src="../src/assets/images/Max.jpg"
             alt="Imagem de Registro"
             className="object-cover w-full h-full"
           />

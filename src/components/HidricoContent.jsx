@@ -6,7 +6,7 @@ const HidricoContent = () => {
         <main className="w-full container mx-auto p-6">
             <section className="text-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">
-                    Nossos Recursos para Gerenciamento de Resíduos Sólidos
+                    Nossos Recursos para Gerenciamento de Recursos Hídricos
                 </h1>
             </section>
 
@@ -26,9 +26,9 @@ const HidricoContent = () => {
                 />
                 <Quadrado 
                     imagem="../src/assets/images/irrigation.svg" 
-                    alt="Direcionamento para reservatórios para reutilização em irrigação e limpeza urbana." 
-                    titulo="Direcionamento para reservatórios para reutilização em irrigação e limpeza urbana." 
-                    descricao="Direcionamento para reservatórios para reutilização em irrigação e limpeza urbana." 
+                    alt="Direcionamento para Reservatórios" 
+                    titulo="Direcionamento para Reservatórios" 
+                    descricao="Reutilização da água para irrigação e limpeza urbana." 
                 />
                 <Quadrado 
                     imagem="../src/assets/images/analytics.svg" 
@@ -37,20 +37,21 @@ const HidricoContent = () => {
                     descricao="Uso de dados históricos para planejamento urbano mais eficiente." 
                 />
             </section>
+
             <section className="w-full mb-6">
-            <InformacoesSecundarias
-                imagem="../src/assets/images/sewage.svg"
-                alt="Gestão de Águas Urbanas"
-                titulo="Por Que Escolher Nosso Sistema?"
-                listaItens={[
-                "Prevenção de inundações e alagamentos.",
-                "Uso eficiente da água para irrigação e consumo.",
-                "Monitoramento em tempo real da qualidade da água.",
-                "Redução de custos operacionais e desperdícios.",
-                "Integração com outros sistemas urbanos inteligentes."
-    ]}
-/>
-</section>
+                <InformacoesSecundarias
+                    imagem="../src/assets/images/sewage.svg"
+                    alt="Gestão de Águas Urbanas"
+                    titulo="Por Que Escolher Nosso Sistema?"
+                    listaItens={[
+                        "Prevenção de inundações e alagamentos.",
+                        "Uso eficiente da água para irrigação e consumo.",
+                        "Monitoramento em tempo real da qualidade da água.",
+                        "Redução de custos operacionais e desperdícios.",
+                        "Integração com outros sistemas urbanos inteligentes."
+                    ]}
+                />
+            </section>
         </main>
     );
 };

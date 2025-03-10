@@ -11,8 +11,8 @@ const Header = () => {
                     <li><a href="/iluminacao" className="hover:underline">Iluminação</a></li>
                     <li><a href="/drenagem" className="hover:underline">Drenagem</a></li>
                     <li><a href="/dados" className="hover:underline">Dados</a></li>
-                    <li><a href="/logar" className="bg-blue-800 px-4 py-2 rounded hover:bg-blue-700"><button >Logar</button></a></li>
-                    <li><a href="/criar-conta" className="bg-blue-800 px-4 py-2 rounded hover:bg-blue-700"><button >Criar Conta</button></a></li>
+                    <li><a href="/logar" className="bg-blue-800 px-4 py-2 rounded hover:bg-blue-700"><button>Logar</button></a></li>
+                    <li><a href="/criar-conta" className="bg-blue-800 px-4 py-2 rounded hover:bg-blue-700"><button>Criar Conta</button></a></li>
                 </ul>
             </nav>
         </header>
