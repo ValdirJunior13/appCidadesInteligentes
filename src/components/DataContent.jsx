@@ -2,7 +2,7 @@
 
 const SmartCityPage = () => {
 return (
-    <div className="min-h-screen bg-gray-100 p-6 flex flex-col justify-center items-center">
+    <div className="min-h-screen bg-blue-50 p-6 flex flex-col justify-center items-center">
     <div className="max-w-6xl w-full grid grid-cols-2 gap-12 items-center">
         {/* Text Section */}
         <div>
@@ -20,7 +20,7 @@ return (
 
       {/* Image Section */}
         <div>
-        <img src="../src/assets/images/Max.jpg" alt="Dados" className="rounded-lg shadow-md w-full" />
+        <img src="../src/assets/images/data.png" alt="Dados" className="w-full" />
         </div>
     </div>
 

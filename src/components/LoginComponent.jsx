@@ -38,7 +38,7 @@ const LoginComponent = () => {
 
     return (
         <div className="flex min-h-screen flex-col justify-center px-4 py-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-xs">
+            <div className="sm:mx-auto sm:w-full sm:max-w-lg">
                 <img
                     alt="Nome do Site"
                     src="../src/assets/images/user.png"

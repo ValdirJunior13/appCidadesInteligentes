@@ -3,7 +3,7 @@ import CadastroComponent from '../components/CadastroComponent';
 
 const Cadastro = () => {
     return (
-            <div>
+            <div className="min-h-screen bg-blue-50 flex justify-center items-center">
                 <CadastroComponent />
             </div>
             

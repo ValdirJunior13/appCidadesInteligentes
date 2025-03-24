@@ -5,12 +5,18 @@ const MainContent = () => {
   const [bairro, setBairro] = useState("");
 
   return (
-    <div className="min-h-screen bg-sky-50 flex flex-col">
-      {/* Hero Section */}
+    <div className="min-h-screen bg-sky-50 flex flex-col relative overflow-hidden">
+      {/* Imagem de fundo no canto inferior direito */}
+      <img
+        src="../src/assets/images/smart-city.png" 
+        alt="Cidade Inteligente"
+        className="absolute bottom-0 right-0 max-w-md w-full "
+      />
+
       <section className="flex-grow flex items-center">
         {/* Conteúdo centralizado */}
         <div className="flex-1 py-16 px-6 text-center">
-          <h1 className="text-6xl font-extrabold text-[#021526]">
+          <h1 className="text-7xl font-extrabold text-[#021526]">
             A Revolução das Cidades Inteligentes Começa Aqui
           </h1>
           <p className="text-xl mt-4 text-gray-700">
@@ -42,15 +48,6 @@ const MainContent = () => {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Imagem à direita */}
-        <div className="hidden md:block flex-1 p-8">
-          <img
-            src="../src/assets/images/smart-city.png"
-            alt="Cidade Inteligente"
-            className="w-full max-w-md mx-auto"
-          />
         </div>
       </section>
 

@@ -11,17 +11,17 @@ const FooterComponent = () => {
                     </p>
                     <div className="flex justify-center md:justify-start space-x-4 mt-4">
                         <a href="https://www.instagram.com/" className="text-gray-200 hover:text-white">
-                            <img src="../src/assets/images/baixados.png" className="w-8 h-8" alt="Instagram" />
+                            <img src="../src/assets/images/baixados.png" className="w-6 h-6" alt="Instagram" />
                         </a>
-                        <a href="https://www.facebook.com/?locale=pt_BR" className="text-gray-200 hover:text-white">🔷</a>
-                        <a href="https://x.com/home" className="text-gray-200 hover:text-white">📧</a>
+                        <a href="https://www.facebook.com/?locale=pt_BR" className="text-gray-200 hover:text-white"><img src="../src/assets/images/facebook.png" alt="Facebook" className="w-5 h-5"></img></a>
+                        <a href="https://x.com/home" className="text-gray-200 hover:text-white"><img src="../src/assets/images/twitter.png" alt="X" className="w-5 h-5"></img></a>
                     </div>
                 </div>
                 
                 {/* Seção Endereço */}
                 <div className="md:w-1/3 px-4 flex flex-col items-center text-center">
                     <h1 className="text-2xl font-bold">Endereço</h1>
-                    <div className="mt-2 w-64 h-32 bg-gray-300 rounded-md"></div> {/* Simulando um mapa */}
+                    <div className="mt-2 w-64 h-32 bg-gray-300 rounded-md"></div>
                 </div>
                 
                 {/* Seção Sobre Nós */}
