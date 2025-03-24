@@ -74,7 +74,6 @@ const CadastroComponent = () => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Preenche automaticamente os campos
       setFormData({
         ...formData,
         nome: user.displayName || "",
@@ -82,7 +81,6 @@ const CadastroComponent = () => {
         user_name: user.email?.split('@')[0] || `user_${Math.random().toString(36).substr(2, 8)}`
       });
 
-      // Tenta cadastro automático
       try {
         const response = await fetch(`/api/cadastro/${type}`, {
           method: "POST",
@@ -134,7 +132,7 @@ const CadastroComponent = () => {
     <div className="w-full md:w-1/2 flex items-center justify-center min-h-screen bg-blue-50 p-4">
       <div className="flex w-full max-w-5xl bg-white shadow-md rounded-lg overflow-hidden">
         <div className="w-1/2 hidden md:block">
-          <img src="../src/assets/images/Max.jpg" alt="Imagem de Registro" className="object-cover w-full h-full" />
+          <img src="../src/assets/images/smart-city (3).png" alt="Imagem de Registro" className="object-cover w-full h-full" />
         </div>
         <div className="w-full md:w-1/2 p-6 md:p-8">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">Crie sua Conta!</h2>

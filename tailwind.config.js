@@ -58,9 +58,15 @@ export default {
         'Segoe UI Symbol', 
         'Noto Color Emoji'
         ]
-      }
     },
-    darkMode: 'class', 
+      screens: { // Adicionando os breakpoints
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+    },
+    },
+    darkMode: 'class', // Suporte ao modo escuro
     plugins: [],
-  };
-  
+};
