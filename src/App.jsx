@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Data from "./pages/Data";
 import '../src/index.css';
+import Error from "./pages/404";
 import Iluminacao from "./pages/Iluminacao";
 
 const App = () => {
@@ -24,6 +25,7 @@ const App = () => {
             <Route path ="/cadastro" element ={<Cadastro />}/>
             <Route path ="/iluminacao" element ={<Iluminacao />}/>
             <Route path ="/data" element ={<Data />}/>
+            <Route path ="/404" element ={<Error />}/>
             </Routes>
         <Footer />
         </Router>
