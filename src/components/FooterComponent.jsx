@@ -3,7 +3,6 @@ const FooterComponent = () => {
         <footer className="bg-blue-600 text-white py-8 px-6">
             <div className="container mx-auto flex flex-col md:flex-row justify-between items-start text-center md:text-left space-x-8">
                 
-                {/* Seção Serviço Eletrônico */}
                 <div className="md:w-1/3 px-4">
                     <h1 className="text-2xl font-bold">Serviço Eletrônico</h1>
                     <p className="mt-2 text-gray-200 text-sm">
@@ -17,14 +16,11 @@ const FooterComponent = () => {
                         <a href="https://x.com/home" className="text-gray-200 hover:text-white"><img src="../src/assets/images/twitter.png" alt="X" className="w-5 h-5"></img></a>
                     </div>
                 </div>
-                
-                {/* Seção Endereço */}
                 <div className="md:w-1/3 px-4 flex flex-col items-center text-center">
                     <h1 className="text-2xl font-bold">Endereço</h1>
                     <div className="mt-2 w-64 h-32 bg-gray-300 rounded-md"></div>
                 </div>
                 
-                {/* Seção Sobre Nós */}
                 <div className="md:w-1/3 px-4 flex flex-col items-center md:items-end text-center md:text-right">
                     <h1 className="text-2xl font-bold">Sobre Nós</h1>
                     <ul className="mt-2 space-y-1 text-sm md:text-base text-right">
@@ -34,8 +30,6 @@ const FooterComponent = () => {
                     </ul>
                 </div>
             </div>
-            
-            {/* Direitos Autorais */}
             <div className="text-center mt-6 border-t border-gray-400 pt-4">
                 <p className="text-gray-200">© 2025 All Right Reserved</p>
             </div>

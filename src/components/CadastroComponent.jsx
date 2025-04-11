@@ -44,28 +44,40 @@ const CadastroComponent = () => {
     setLoading({...loading, form: true});
     
     try {
-      const response = await fetch("/api/cadastro", {
+      const response = await fetch("http://localhost:3000/api/cadastro", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          username: formData.user_name,
+          password: "senhaPadrao", // Você deve adicionar campo de senha no formulário
+          nome: formData.nome,
+          email: formData.email,
+          telefone: formData.telefone,
+          cpf: formData.cpf
+        }),
       });
-
-      if (response.ok) {
-        navigate("/home");
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Erro no cadastro");
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.message || "Erro no cadastro");
       }
+  
+      // Cadastro bem-sucedido
+      navigate("/paginalogin", { 
+        state: { 
+          successMessage: "Cadastro realizado com sucesso! Faça login para continuar." 
+        } 
+      });
     } catch (error) {
       console.error("Error:", error);
-      setError("Erro ao conectar com o servidor");
+      setError(error.message || "Erro ao conectar com o servidor");
     } finally {
       setLoading({...loading, form: false});
     }
   };
-
   const handleSocialLogin = async (provider, type) => {
     setLoading({...loading, [type]: true});
     setError("");
@@ -82,16 +94,12 @@ const CadastroComponent = () => {
       });
 
       try {
-        const response = await fetch(`/api/cadastro/${type}`, {
+        const response = await fetch("http://localhost:3000/api/cadastro", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            nome: user.displayName,
-            email: user.email,
-            uid: user.uid
-          }),
+          body: JSON.stringify(formData),
         });
 
         if (response.ok) {

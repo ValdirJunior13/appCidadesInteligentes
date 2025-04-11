@@ -1,17 +1,57 @@
 import { useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+const customIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
+});
 
 const MainContent = () => {
   const [cidade, setCidade] = useState("");
   const [bairro, setBairro] = useState("");
-  const [showCities, setShowCities] = useState(false); 
-  const [showBairros, setShowBairros] = useState(false); 
+  const [rua, setRua] = useState("");
+  const [showCities, setShowCities] = useState(false);
+  const [showBairros, setShowBairros] = useState(false);
+  const [center, setCenter] = useState(null);
 
-  const cidades = ["São Paulo", "Rio de Janeiro", "Brasília", "Recife"];
-  const bairros = ["Centro", "Zona Sul", "Zona Norte", "Zona Leste"];
+  const fetchCoordenadas = async (endereco) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`,
+        {
+          headers: {
+            "User-Agent": "SeuApp/1.0"
+          }
+        }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        return [parseFloat(lat), parseFloat(lon)];
+      } else {
+        return null;
+      }
+    } catch (err) {
+      console.error("Erro ao buscar coordenadas:", err);
+      return null;
+    }
+  };
+
+  const handlePesquisar = async () => {
+    const termoBusca = rua ? `${rua}, ${bairro}, ${cidade}` : bairro ? `${bairro}, ${cidade}` : cidade;
+    const coords = await fetchCoordenadas(termoBusca);
+    if (coords) {
+      setCenter(coords);
+    } else {
+      alert("Localização não encontrada. Tente novamente.");
+    }
+  };
 
   return (
+    /* imagem principal da página*/ 
     <div className="min-h-screen bg-sky-50 flex flex-col relative overflow-hidden">
-
       <img
         src="../src/assets/images/smart-city.png"
         alt="Cidade Inteligente"
@@ -19,18 +59,17 @@ const MainContent = () => {
         style={{ maxWidth: "1024px" }}
       />
 
-      <section className="flex-grow flex items-center">
-
-        <div className="flex-1 py-16 px-50 text-left">
-          <h1 className="text-8xl font-extrabold text-[#021526] mb-6">
-            A Revolução das Cidades<br />Inteligentes Começa Aqui
+      <section className="flex-grow flex flex-col items-center">
+        <div className="w-full max-w-6xl py-16 px-6 text-left">
+          <h1 className="text-7xl font-extrabold text-[#021526] mb-6">
+            A Revolução das Cidades<br/>Inteligentes Começa Aqui
           </h1>
           <p className="text-2xl mt-4 text-gray-700 mb-8">
             Gerencie iluminação, drenagem, lixeiras, irrigação e muito mais em um único sistema integrado.
           </p>
 
-          <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-8 max-w-6xl relative pb-8">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 bg-white rounded-full p-2 shadow-lg">
+          <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-8 w-full relative pb-8">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 bg-white rounded-full p-2 shadow-lg w-full md:w-auto">
               <div className="relative">
                 <input
                   type="text"
@@ -40,30 +79,13 @@ const MainContent = () => {
                   className="flex-1 p-3 rounded-full border-none focus:outline-none text-gray-700"
                 />
                 <button
-                  className="absolute right-2 top-2 bg-transparent text-gray-500"
+                  className="absolute right-2 top-4 bg-transparent text-gray-500"
                   onClick={() => setShowCities(!showCities)}
                 >
-                  <img src="../src/assets/images/sinal-de-seta-para-baixo-para-navegar.png" alt="Seta para baixo" className="w-6 h-6" />
+                  <img src="../src/assets/images/sinal-de-seta-para-baixo-para-navegar.png" alt="Seta para baixo" className="w-4 h-4" />
                 </button>
-                {showCities && (
-                  <ul className="absolute top-12 left-0 bg-white border rounded-lg shadow-md w-full z-10">
-                    {cidades.map((c) => (
-                      <li
-                        key={c}
-                        className="p-2 hover:bg-gray-200 cursor-pointer"
-                        onClick={() => {
-                          setCidade(c);
-                          setShowCities(false);
-                        }}
-                      >
-                        {c}
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
 
-              {/* Campo Bairro */}
               <div className="relative">
                 <input
                   type="text"
@@ -73,35 +95,50 @@ const MainContent = () => {
                   className="flex-1 p-3 rounded-full border-none focus:outline-none text-gray-700"
                 />
                 <button
-                  className="absolute right-2 top-2 bg-transparent text-gray-500"
+                  className="absolute right-2 top-4 bg-transparent text-gray-500"
                   onClick={() => setShowBairros(!showBairros)}
                 >
                   <img src="../src/assets/images/sinal-de-seta-para-baixo-para-navegar.png" alt="Seta para baixo" className="w-4 h-4" />
                 </button>
-                {showBairros && (
-                  <ul className="absolute top-12 left-0 bg-white border rounded-lg shadow-md w-full z-10">
-                    {bairros.map((b) => (
-                      <li
-                        key={b}
-                        className="p-2 hover:bg-gray-200 cursor-pointer"
-                        onClick={() => {
-                          setBairro(b);
-                          setShowBairros(false);
-                        }}
-                      >
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
 
-              {/* Botão de Pesquisa */}
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Rua"
+                  value={rua}
+                  onChange={(e) => setRua(e.target.value)}
+                  className="flex-1 p-3 rounded-full border-none focus:outline-none text-gray-700"
+                />
+                <button className = "absolute right-2 top-4 bg-transparent text-gray-500">
+                <img src="../src/assets/images/sinal-de-seta-para-baixo-para-navegar.png" alt="Seta para baixo" className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button
+                className="bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition"
+                onClick={handlePesquisar}
+              >
                 <img src="../src/assets/images/lupa.png" alt="Pesquisar" className="w-6 h-6" />
               </button>
             </div>
           </div>
+
+          {center && (
+            <div className="mt-12 flex justify-center">
+              <div className="w-full max-w-4xl rounded-lg overflow-hidden shadow-lg border border-gray-300">
+                <MapContainer center={center} zoom={13} scrollWheelZoom={false} className="h-[400px] w-full rounded-lg">
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <Marker position={center} icon={customIcon}>
+                    <Popup>{rua ? `${rua}, ${bairro}, ${cidade}` : bairro ? `${bairro}, ${cidade}` : cidade}</Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </div>

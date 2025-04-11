@@ -38,7 +38,7 @@ const HidricoContent = () => {
                 />
             </section>
 
-            <section className="w-full mb-6">
+            <section className="w-full mb-6 flex flex-col" >
                 <InformacoesSecundarias
                     imagem="../src/assets/images/sewage.svg"
                     alt="Gestão de Águas Urbanas"

@@ -2,10 +2,8 @@ import PropTypes from "prop-types";
 
 const Quadrado = ({ imagem, alt, titulo, descricao }) => {
   return (
-    <div className="p-6 border rounded-lg flex flex-col items-center text-center transition-colors duration-300 hover:bg-blue-500 hover:text-black relative">
-      {/* Círculo de fundo dentro do quadrado */}
+    <div className="w-64 h-80 p-6 border rounded-lg flex flex-col items-center text-center transition-colors duration-300 hover:bg-blue-500 hover:text-black relative">
       <div className="w-28 h-28 bg-blue-200 rounded-full flex items-center justify-center">
-        {/* Imagem dentro do círculo */}
         {imagem ? (
           <img
             src={imagem}

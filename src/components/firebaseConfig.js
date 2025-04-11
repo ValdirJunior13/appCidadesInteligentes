@@ -17,11 +17,9 @@ const firebaseConfig = {
   appId: "SEU_APP_ID"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Configure Google provider
 const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
@@ -29,12 +27,10 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
-// Configure Apple provider
 const appleProvider = new OAuthProvider('apple.com');
 appleProvider.addScope('email');
 appleProvider.addScope('name');
 appleProvider.setCustomParameters({
-  // Opcional: força o redirecionamento em dispositivos iOS
 context: 'useRedirect'
 });
 
