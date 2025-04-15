@@ -25,11 +25,11 @@ const App = () => {
                     <Route path="/hidrico" element={<Hidrico />} />
                     <Route path="/lixo" element={<Lixo />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/cadastro" element={<Cadastro />} />
+                    <Route path="/register" element={<Cadastro />} />
                     <Route path="/iluminacao" element={<Iluminacao />} />
                     <Route path="/data" element={<Data />} />
                     <Route path="/404" element={<Error />} />
-                    <Route path="/paginaLogin" element={<PaginaLogin />} />
+                    <Route path="/paginalogin" element={<PaginaLogin />} />
                 </Routes>
                 <Footer />
             </Router>

@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 
 const CadastroComponent = () => {
   const [formData, setFormData] = useState({
-    nome: "",
-    telefone: "",
+    name: "",
+    cellphone: "",
     email: "",
-    cpf: "",
+    cpf_cnpj: "",
     user_name: "",
+    password: "", 
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState({
@@ -24,12 +25,13 @@ const CadastroComponent = () => {
   };
 
   const validateFields = () => {
-    if (!formData.nome || !formData.telefone || !formData.email || !formData.cpf || !formData.user_name) {
+    if (!formData.name || !formData.cellphone || !formData.email || 
+        !formData.cpf_cnpj || !formData.user_name || !formData.password) {
       setError("Todos os campos devem ser preenchidos.");
       return false;
     }
-    const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-    if (!cpfRegex.test(formData.cpf)) {
+    const cpf_cnpjRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+    if (!cpf_cnpjRegex.test(formData.cpf_cnpj)) {
       setError("CPF inválido. Formato correto: 000.000.000-00");
       return false;
     }
@@ -44,29 +46,28 @@ const CadastroComponent = () => {
     setLoading({...loading, form: true});
     
     try {
-      const response = await fetch("http://localhost:3000/api/cadastro", {
+      const response = await fetch("http://localhost:3000/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           username: formData.user_name,
-          password: "senhaPadrao", // Você deve adicionar campo de senha no formulário
-          nome: formData.nome,
+          password: formData.password,
+          name: formData.name,
           email: formData.email,
-          telefone: formData.telefone,
-          cpf: formData.cpf
-        }),
+          cellphone: formData.cellphone,
+          cpf_cnpj: formData.cpf_cnpj
+        })
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(data.message || "Erro no cadastro");
       }
-  
-      // Cadastro bem-sucedido
-      navigate("/paginalogin", { 
+
+      navigate("/login", { 
         state: { 
           successMessage: "Cadastro realizado com sucesso! Faça login para continuar." 
         } 
@@ -78,6 +79,7 @@ const CadastroComponent = () => {
       setLoading({...loading, form: false});
     }
   };
+
   const handleSocialLogin = async (provider, type) => {
     setLoading({...loading, [type]: true});
     setError("");
@@ -88,7 +90,7 @@ const CadastroComponent = () => {
 
       setFormData({
         ...formData,
-        nome: user.displayName || "",
+        name: user.displayName || "",
         email: user.email || "",
         user_name: user.email?.split('@')[0] || `user_${Math.random().toString(36).substr(2, 8)}`
       });
@@ -99,7 +101,12 @@ const CadastroComponent = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            username: user.email?.split('@')[0],
+            email: user.email,
+            name: user.displayName,
+            authProvider: type
+          }),
         });
 
         if (response.ok) {
@@ -111,10 +118,8 @@ const CadastroComponent = () => {
         console.error("API Error:", apiError);
         setError("Complete os campos restantes para finalizar");
       }
-
     } catch (error) {
       console.error(`${type} Error:`, error);
-      
       let errorMessage = `Erro ao autenticar com ${type === 'google' ? 'Google' : 'Apple'}`;
       
       if (error.code) {
@@ -129,7 +134,6 @@ const CadastroComponent = () => {
             errorMessage = error.message || errorMessage;
         }
       }
-      
       setError(errorMessage);
     } finally {
       setLoading({...loading, [type]: false});
@@ -145,7 +149,6 @@ const CadastroComponent = () => {
         <div className="w-full md:w-1/2 p-6 md:p-8">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">Crie sua Conta!</h2>
           
-          {/* Botões de Login Social */}
           <div className="flex flex-col space-y-3 mb-5">
             <button
               onClick={() => handleSocialLogin(googleProvider, 'google')}
@@ -202,18 +205,17 @@ const CadastroComponent = () => {
             <div className="flex-grow border-t border-gray-300"></div>
           </div>
 
-          {/* Formulário */}
           <form onSubmit={handleSubmit}>
             {error && <p className="text-red-500 mb-3 text-sm">{error}</p>}
             
             <div className="space-y-4">
               <div>
-                <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
                 <input 
                   type="text" 
-                  name="nome" 
-                  id="nome" 
-                  value={formData.nome} 
+                  name="name" 
+                  id="name" 
+                  value={formData.name} 
                   onChange={handleChange} 
                   className="w-full border border-gray-300 rounded-md py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                   required
@@ -221,12 +223,12 @@ const CadastroComponent = () => {
               </div>
               
               <div>
-                <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                <label htmlFor="cellphone" className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
                 <input 
                   type="tel" 
-                  name="telefone" 
-                  id="telefone" 
-                  value={formData.telefone} 
+                  name="cellphone" 
+                  id="cellphone" 
+                  value={formData.cellphone} 
                   onChange={handleChange} 
                   className="w-full border border-gray-300 rounded-md py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                   required
@@ -247,12 +249,12 @@ const CadastroComponent = () => {
               </div>
               
               <div>
-                <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+                <label htmlFor="cpf_cnpj" className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
                 <input 
                   type="text" 
-                  name="cpf" 
-                  id="cpf" 
-                  value={formData.cpf} 
+                  name="cpf_cnpj" 
+                  id="cpf_cnpj" 
+                  value={formData.cpf_cnpj} 
                   onChange={handleChange} 
                   placeholder="000.000.000-00" 
                   className="w-full border border-gray-300 rounded-md py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
@@ -267,6 +269,19 @@ const CadastroComponent = () => {
                   name="user_name" 
                   id="user_name" 
                   value={formData.user_name} 
+                  onChange={handleChange} 
+                  className="w-full border border-gray-300 rounded-md py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input 
+                  type="password" 
+                  name="password" 
+                  id="password" 
+                  value={formData.password} 
                   onChange={handleChange} 
                   className="w-full border border-gray-300 rounded-md py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                   required
