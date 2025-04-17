@@ -4,7 +4,6 @@ const SmartCityPage = () => {
 return (
     <div className="min-h-screen bg-blue-50 p-6 flex flex-col justify-center items-center">
     <div className="max-w-6xl w-full grid grid-cols-2 gap-12 items-center">
-        {/* Text Section */}
         <div>
         <h1 className="text-3xl font-bold text-blue-700 mb-4">
             O Futuro da Gestão Inteligente de Dados
@@ -18,13 +17,11 @@ return (
         </a>
         </div>
 
-      {/* Image Section */}
         <div>
         <img src="../src/assets/images/data.png" alt="Dados" className="w-full" />
         </div>
     </div>
 
-      {/* Newsletter Subscription */}
     <div className="max-w-5xl mx-auto mt-20 bg-blue-600 text-white p-8 rounded-lg text-center shadow-lg w-full">
         <h2 className="text-lg font-semibold mb-4">Assine Nossa Newsletter</h2>
         <div className="bg-white p-2 rounded-full flex items-center w-full max-w-2xl mx-auto">

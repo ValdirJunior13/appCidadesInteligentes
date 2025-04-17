@@ -30,7 +30,7 @@ const LoginComponent = () => {
     sessionStorage.setItem("userRole", "admin");
     sessionStorage.setItem("lastLogin", new Date().toISOString());
 
-    Cookies.set("authHash", fakeToken, {
+    Cookies.set("authToken", fakeToken, {
         expires: 1,
         secure: true,
         sameSite: "strict",

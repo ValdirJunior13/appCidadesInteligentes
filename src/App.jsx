@@ -1,5 +1,4 @@
-import "./App.css";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Hidrico from "./pages/Hidrico";
 import Lixo from "./pages/Lixo";
@@ -8,33 +7,143 @@ import Footer from "./components/FooterComponent";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Data from "./pages/Data";
-import Error from "./pages/404";
+import NotFoundPage from "./pages/404";
 import Iluminacao from "./pages/Iluminacao";
-import PaginaLogin from "./pages/PaginaLogin";
-import { AuthProvider } from "./context/AuthContext"; // << aqui agora
+import LoginPage from "./pages/PaginaLogin";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import "leaflet/dist/leaflet.css";
-import "../src/index.css";
-
+import "./index.css";
+import PropTypes from "prop-types";
+import GerenciamentoCidades from "./pages/GerenciamentoCidade";
 const App = () => {
     return (
         <AuthProvider>
             <Router>
-                <Header />
                 <Routes>
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/hidrico" element={<Hidrico />} />
-                    <Route path="/lixo" element={<Lixo />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Cadastro />} />
-                    <Route path="/iluminacao" element={<Iluminacao />} />
-                    <Route path="/data" element={<Data />} />
-                    <Route path="/404" element={<Error />} />
-                    <Route path="/paginalogin" element={<PaginaLogin />} />
+                    <Route
+                        path="/home"
+                        element={
+                            <WithFullHeader>
+                                <Home />
+                            </WithFullHeader>
+                        }
+                    />
+                    <Route
+                        path="/login"
+                        element={
+                            <WithHeader hideLogin>
+                                <Login />
+                            </WithHeader>
+                        }
+                    />
+                    <Route
+                        path="/register"
+                        element={
+                            <WithHeader hideRegister>
+                                <Cadastro />
+                            </WithHeader>
+                        }
+                    />
+                    <Route
+                        path="/404"
+                        element={
+                            <WithFullHeader>
+                                <NotFoundPage />
+                            </WithFullHeader>
+                        }
+                    />
+
+                    {/* Rotas protegidas */}
+        <Route element={<ProtectedRoute />}>
+            <Route
+                path="/hidrico"
+                element={
+                    <WithFullHeader>
+                    <Hidrico />
+                    </WithFullHeader>
+                }
+                />
+            <Route
+            path="/lixo"
+            element={
+            <WithFullHeader>
+                <Lixo />
+            </WithFullHeader>
+        }
+    />
+    <Route
+        path="/iluminacao"
+        element={
+            <WithFullHeader>
+                <Iluminacao />
+            </WithFullHeader>
+        }
+    />
+    <Route
+        path="/data"
+        element={
+            <WithFullHeader>
+                <Data />
+            </WithFullHeader>
+        }
+    />
+    <Route
+        path="/paginalogin"
+        element={
+            <WithHeader hideBoth>
+                <LoginPage />
+            </WithHeader>
+        }
+    />
+    <Route
+        path="/gerenciamentocidades"
+        element={
+            <WithHeader>
+                <GerenciamentoCidades />
+            </WithHeader>
+        }
+    />
+</Route>
+
+{/* Redirecionamentos */}
+<Route path="/" element={<Navigate to="/home" replace />} />
+<Route path="*" element={<Navigate to="/404" replace />} />
                 </Routes>
+
                 <Footer />
             </Router>
         </AuthProvider>
     );
+};
+
+// Componentes auxiliares para o Header
+const WithFullHeader = ({ children }) => (
+    <>
+        <Header showLogin showRegister />
+        {children}
+    </>
+);
+
+WithFullHeader.propTypes = {
+    children: PropTypes.node.isRequired,
+};
+
+const WithHeader = ({ children, hideLogin = false, hideRegister = false, hideBoth = false }) => (
+    <>
+        <Header
+            showLogin={!hideLogin && !hideBoth}
+            showRegister={!hideRegister && !hideBoth}
+        />
+        {children}
+    </>
+);
+
+WithHeader.propTypes = {
+    children: PropTypes.node.isRequired,
+    hideLogin: PropTypes.bool,
+    hideRegister: PropTypes.bool,
+    hideBoth: PropTypes.bool,
 };
 
 export default App;

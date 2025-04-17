@@ -1,41 +1,55 @@
-import { createContext, useState, useContext } from "react";
-import PropTypes from "prop-types";
+
+import { createContext, useState, useEffect, useContext } from "react";
+import Cookies from "js-cookie";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [usuarioLogado, setUsuarioLogado] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [authState, setAuthState] = useState({
+    usuarioLogado: false,
+    userData: null
+  });
+
+  useEffect(() => {
+    const token = Cookies.get("authToken");
+    const userName = Cookies.get("userName");
+    
+    if (token && userName) {
+      setAuthState({
+        usuarioLogado: true,
+        userData: {
+          token,
+          nome: userName,
+          email: sessionStorage.getItem("userEmail") || ""
+        }
+      });
+    }
+  }, []);
 
   const login = ({ token, nome, email }) => {
-    setUsuarioLogado(true);
-    setUserData({ token, nome, email });
+    Cookies.set("authToken", token, { expires: 1, path: "/" });
+    Cookies.set("userName", nome, { expires: 1, path: "/" });
+    sessionStorage.setItem("userEmail", email);
+    
+    setAuthState({
+      usuarioLogado: true,
+      userData: { token, nome, email }
+    });
   };
   
   const logout = () => {
-    setUsuarioLogado(false);
-    setUserData(null);
+    Cookies.remove("authToken", { path: "/" });
+    Cookies.remove("userName", { path: "/" });
+    sessionStorage.clear();
+    setAuthState({ usuarioLogado: false, userData: null });
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        usuarioLogado,
-        userData,
-        login,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={{ ...authState, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-
-AuthProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
