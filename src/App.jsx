@@ -19,6 +19,7 @@ import GerenciarCidades from "./pages/GerenciarCidades";
 import IrrigacaoControl from "./pages/IrrigacaoControl";
 import IluminacaoControl from "./pages/IluminacaoControl";
 import DrenagemControl from "./pages/DrenagemControl";
+import ConfiguracaoComponent from "./pages/ConfiguracaoComponent";    
 
 const App = () => {
     return (
@@ -33,9 +34,6 @@ const App = () => {
                             </WithFullHeader>
                         }
                     />
-                    <Route path ="/drenagem" element = {<DrenagemControl />} />
-                    <Route path = "/iluminacao" element = {<IluminacaoControl />} />
-                    <Route path = "/irrigacao" element={<IrrigacaoControl />} />
                     
                     <Route
                         path="/login"
@@ -64,6 +62,11 @@ const App = () => {
 
                     {/* Rotas protegidas */}
         <Route element={<ProtectedRoute />}>
+            <Route path ="/drenagem" element = {<DrenagemControl />} />
+            <Route path = "/iluminacao" element = {<IluminacaoControl />} />
+            <Route path = "/irrigacao" element={<IrrigacaoControl />} />
+            <Route path = "/configuracoes" element = {<ConfiguracaoComponent />} />
+
             <Route
                 path="/hidrico"
                 element={
