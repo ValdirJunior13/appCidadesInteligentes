@@ -2,7 +2,7 @@ import HidricoContent from '../components/HidricoContent';
 
 const Hidrico = () => {
     return(
-        <div className="min-h-screen bg-blue-50 flex justify-center items-center"> 
+        <div className="min-h-screen bg-[#d9d9d9]"> 
             <HidricoContent />
         </div>
     );

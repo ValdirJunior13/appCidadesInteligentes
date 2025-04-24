@@ -2,7 +2,7 @@ import PaginaLoginComponent from "../components/PaginaLoginComponent";
 
 const PaginaLogin = () => {
     return (
-        <div className="min-h-screen bg-blue-50 ">
+        <div className="min-h-screen">
             <PaginaLoginComponent />
         </div>
     );

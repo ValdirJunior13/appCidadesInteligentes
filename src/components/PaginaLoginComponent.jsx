@@ -1,98 +1,30 @@
-import { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import Quadrado from "../components/Quadrado";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import Cookies from "js-cookie";
-import { useNavigate, Link } from "react-router-dom"; 
-import { useAuth } from '../context/AuthContext';
-
-const MapViewControl = ({ center, zoom }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, zoom);
-    }
-  }, [center, zoom, map]);
-  return null;
-};
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-});
-
-const customIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
-});
+import Quadrado from "../components/Quadrado";
+import Sidebar from "../components/Sidebar";
 
 const PaginaLoginComponent = () => {
   const navigate = useNavigate();
-  const { usuarioLogado, userData, logout } = useAuth();
-  useEffect(() => {
-    if (!usuarioLogado) {
-      navigate("/login");
-    }
-  }, [usuarioLogado, navigate]);
-
+  const { usuarioLogado, logout } = useAuth();
   const [citys, setCitys] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [novoEndereco, setNovoEndereco] = useState({
-    user_name: "",
     name: "",
     state: "",
     city: "",
-    validation_hash: "",
-    coordenadas: null
+    coordenadas: null,
   });
-  const mapRef = useRef(null);
   const [loading, setLoading] = useState(false);
-  const [citySelecionada, setCitySelecionada] = useState(null);
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
-  const [pontosFiltrados, setPontosFiltrados] = useState([]);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Fechar menu ao clicar fora
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      const userMenu = document.querySelector('.user-menu-container');
-      if (userMenu && !userMenu.contains(event.target)) {
-        setShowUserMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Buscar coordenadas quando cidade ou estado mudar
-  useEffect(() => {
-    if (mostrarFormulario && (novoEndereco.city || novoEndereco.state)) {
-      const timer = setTimeout(() => {
-        buscarCoordenadas();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [novoEndereco.city, novoEndereco.state, mostrarFormulario]);
-
-  // Filtrar pontos quando cidade ou categoria mudar
-  useEffect(() => {
-    if (citySelecionada && categoriaSelecionada) {
-      const pontos = citySelecionada.pontos?.[categoriaSelecionada] || [];
-      setPontosFiltrados(pontos);
-    } else {
-      setPontosFiltrados([]);
-    }
-  }, [citySelecionada, categoriaSelecionada]);
+    if (!usuarioLogado) navigate("/login");
+  }, [usuarioLogado, navigate]);
 
   const buscarCoordenadas = async () => {
     if (!novoEndereco.city || !novoEndereco.state) return;
-
     setLoading(true);
     try {
       const response = await fetch(
@@ -101,9 +33,8 @@ const PaginaLoginComponent = () => {
         )}&countrycodes=br&addressdetails=1`
       );
       const data = await response.json();
-
-      if (data && data.length > 0) {
-        const resultadoPreciso = data.find((item) => {
+      if (data?.length > 0) {
+        const match = data.find((item) => {
           const address = item.address;
           return (
             (address.city?.toLowerCase() === novoEndereco.city.toLowerCase() ||
@@ -112,15 +43,11 @@ const PaginaLoginComponent = () => {
             address.state?.toLowerCase().includes(novoEndereco.state.toLowerCase())
           );
         }) || data[0];
-
-        const { lat, lon } = resultadoPreciso;
-        const novasCoordenadas = [parseFloat(lat), parseFloat(lon)];
-
-        setNovoEndereco((prev) => ({ ...prev, coordenadas: novasCoordenadas }));
-
-        if (mapRef.current) {
-          mapRef.current.flyTo(novasCoordenadas, 15);
-        }
+        const { lat, lon } = match;
+        setNovoEndereco((prev) => ({
+          ...prev,
+          coordenadas: [parseFloat(lat), parseFloat(lon)],
+        }));
       }
     } catch (error) {
       console.error("Erro ao buscar coordenadas:", error);
@@ -128,36 +55,24 @@ const PaginaLoginComponent = () => {
       setLoading(false);
     }
   };
-  
-  const handleGerenciamentoCidades = () => {
-    navigate("/gerenciamentocidades");
-  };
+
+  useEffect(() => {
+    if (mostrarFormulario && (novoEndereco.city || novoEndereco.state)) {
+      const timer = setTimeout(() => buscarCoordenadas(), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [novoEndereco.city, novoEndereco.state, mostrarFormulario]);
 
   const adicionarEndereco = () => {
-    if (
-      novoEndereco.name.trim() &&
-      novoEndereco.state.trim() &&
-      novoEndereco.city.trim() &&
-      novoEndereco.coordenadas
-    ) {
+    if (novoEndereco.name && novoEndereco.state && novoEndereco.city && novoEndereco.coordenadas) {
       const novaCidade = {
         ...novoEndereco,
-        pontos: {
-          iluminacao: [],
-          drenagem: [],
-          lixo: [],
-          irrigacao: [],
-        },
+        pontos: { iluminacao: [], drenagem: [], lixo: [], irrigacao: [] },
       };
-
       setCitys([...citys, novaCidade]);
       setNovoEndereco({ name: "", state: "", city: "", coordenadas: null });
       setMostrarFormulario(false);
     }
-  };
-
-  const handleCategoriaClick = (categoria) => {
-    setCategoriaSelecionada(categoria);
   };
 
   const handleLogoutClick = () => {
@@ -165,256 +80,265 @@ const PaginaLoginComponent = () => {
     navigate("/login");
   };
 
-  if (!usuarioLogado) {
-    return null;  
-  }
+  const handleAccountOption = (opcao) => {
+    setShowUserMenu(false);
+    if (opcao === "email") {
+      navigate("/alterar-email");
+    } else if (opcao === "senha") {
+      navigate("/alterar-senha");
+    } else if (opcao === "dados") {
+      navigate("/alterar-dados");
+    } else if(opcao === "sair"){
+      navigate("/login");
+    } else if(opcao === "Voltar ao Menu?"){
+      navigate("/home");
+
+    }
+  };
+  
+  if (!usuarioLogado) return null;
 
   return (
-    <div className="min-h-screen bg-white flex">
-    {/* Sidebar */}
-    <div className="w-64 bg-gray-100 p-4 border-r border-gray-300">
-      <h2 className="text-lg font-bold mb-4">Menu</h2>
-      <ul className="space-y-2 text-sm">
-        {["iluminacao", "drenagem", "lixo", "irrigacao"].map((cat) => (
-          <li key={cat}>
-            <button
-              onClick={() => handleCategoriaClick(cat)}
-              className={`w-full text-left hover:bg-gray-200 p-2 rounded ${
-                categoriaSelecionada === cat ? "bg-gray-300" : ""
-              }`}
-            >
-              Gerenciamento de {cat}
-            </button>
-          </li>
-        ))}
-        <li>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    
+      <div className="bg-white bg-opacity-90 shadow-sm py-3 px-6 flex justify-end items-center sticky top-0 z-30 backdrop-blur-sm">
+        <div className="relative">
           <button
-            onClick={handleGerenciamentoCidades}
-            className="w-full text-left hover:bg-gray-200 p-2 rounded"
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center space-x-2 focus:outline-none group"
+            aria-label="Menu do usuário"
           >
-            Gerenciamento de Cidades
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-lg font-medium shadow-md group-hover:shadow-lg transition-all">
+              {Cookies.get("userName")?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-gray-500 transition-transform ${showUserMenu ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
           </button>
-        </li>
-      </ul>
-    </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <header className="bg-white border-b border-gray-200 py-3 px-6 flex justify-end items-center">
-          <div className="relative user-menu-container">
-            <button 
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-2 focus:outline-none"
-            >
-              <img 
-                src="/caminho/para/sua/imagem-de-usuario.jpg" 
-                alt="Usuário"
-                className="w-8 h-8 rounded-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null; 
-                  e.target.src = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236B7280'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E"
-                }}
-              />
-              <span className="text-sm font-medium">
-                {Cookies.get("userName") || "Usuário"}
-              </span>
-            </button>
-            
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
-                <Link 
-                  to="/perfil" 
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  onClick={() => setShowUserMenu(false)}
+          {showUserMenu && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-100 divide-y divide-gray-100">
+              <div className="px-4 py-3">
+                <p className="text-sm font-medium text-gray-900">{Cookies.get("userName") || "Usuário"}</p>
+                <p className="text-xs text-gray-500 truncate">{Cookies.get("userEmail") || ""}</p>
+              </div>
+              <div className="py-1">
+                <button
+                  onClick={() => handleAccountOption("dados")}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2"
                 >
-                  Meu Perfil
-                </Link>
-                <Link 
-                  to="/alterar-senha" 
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  onClick={() => setShowUserMenu(false)}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Dados da Conta</span>
+                </button>
+                <button
+                  onClick={() => handleAccountOption("email")}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2"
                 >
-                  Alterar Senha
-                </Link>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Alterar E-mail</span>
+                </button>
+                <button
+                  onClick={() => handleAccountOption("senha")}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span>Alterar Senha</span>
+                </button>
+              </div>
+              <div className="py-1">
                 <button
                   onClick={handleLogoutClick}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                 >
-                  Sair da Conta
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Sair</span>
                 </button>
-              </div>
-            )}
-          </div>
-        </header>
-
-        <div className="p-8 flex-1">
-          <h1 className="text-2xl font-bold mb-4">Gerenciador de Localidades</h1>
-
-          <div className="flex flex-wrap gap-4">
-            {citys.map((local, index) => (
-              <div key={index} className="relative">
-                <div
-                  onClick={() => setCitySelecionada(local)}
-                  className={`cursor-pointer ${
-                    citySelecionada?.name === local.name ? "ring-2 ring-blue-500 rounded-lg" : ""
-                  }`}
-                >
-                  <Quadrado
-                    imagem="../src/assets/images/construcao-da-city.png"
-                    titulo={local.name}
-                    descricao={`${local.city}, ${local.state}`}
-                  />
-                </div>
-
-                <button
-                  onClick={() => {
-                    const novaLista = citys.filter((_, i) => i !== index);
-                    setCitys(novaLista);
-                    if (citySelecionada?.name === local.name) {
-                      setCitySelecionada(null);
-                    }
-                  }}
-                  className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600 text-xs font-bold"
-                  title="Remover"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-
-            <button
-              onClick={() => {
-                setMostrarFormulario(true);
-                setNovoEndereco({ name: "", state: "", city: "", coordenadas: null });
-              }}
-              className="w-12 h-12 border-2 border-black rounded-full flex items-center justify-center text-3xl font-bold hover:bg-gray-100"
-            >
-              +
-            </button>
-          </div>
-
-          {/* Mapa principal */}
-          <div className="h-96 w-full rounded-lg overflow-hidden border border-gray-300 shadow mt-4">
-            <MapContainer
-              center={[-8.3356, -36.4242]}
-              zoom={13}
-              scrollWheelZoom={true}
-              style={{ height: "100%", width: "100%" }}
-              whenCreated={(map) => {
-                mapRef.current = map;
-              }}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-              />
-
-              <MapViewControl
-                center={citySelecionada?.coordenadas || novoEndereco.coordenadas || [-8.3356, -36.4242]}
-                zoom={15}
-              />
-
-              {citys.map((city, index) => (
-                <Marker key={index} position={city.coordenadas} icon={customIcon}>
-                  <Popup>
-                    {city.name}, {city.city}
-                  </Popup>
-                </Marker>
-              ))}
-
-              {mostrarFormulario && novoEndereco.coordenadas && (
-                <Marker position={novoEndereco.coordenadas} icon={customIcon}>
-                  <Popup>Nova localização</Popup>
-                </Marker>
-              )}
-
-              {citySelecionada &&
-                pontosFiltrados.map((ponto, index) => (
-                  <Marker key={`ponto-${index}`} position={ponto} icon={customIcon}>
-                    <Popup>
-                      {categoriaSelecionada} - Ponto {index + 1}
-                    </Popup>
-                  </Marker>
-                ))}
-            </MapContainer>
-          </div>
-
-          {/* Formulário e Detalhes */}
-          {citySelecionada && (
-            <div className="mt-6">
-              <div className="p-4 border rounded bg-gray-50 shadow mb-4">
-                <h3 className="text-xl font-bold mb-2">Detalhes de {citySelecionada.name}</h3>
-                <p>
-                  <strong>Estado:</strong> {citySelecionada.state}
-                </p>
-                <p>
-                  <strong>Cidade:</strong> {citySelecionada.city}
-                </p>
-                <p>
-                  <strong>Coordenadas:</strong> {citySelecionada.coordenadas.join(", ")}
-                </p>
-              </div>
-
-              {categoriaSelecionada && (
-                <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-                  <h4 className="font-semibold text-blue-800">
-                    Mostrando {pontosFiltrados.length} pontos de {categoriaSelecionada} em{" "}
-                    {citySelecionada.name}
-                  </h4>
-                </div>
-              )}
-            </div>
-          )}
-
-          {mostrarFormulario && (
-            <div className="mt-6 p-4 border border-gray-300 rounded w-full max-w-md bg-gray-50">
-              <h3 className="text-lg font-bold mb-2">Nova Localidade</h3>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Nome"
-                  value={novoEndereco.name}
-                  onChange={(e) => setNovoEndereco({ ...novoEndereco, name: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-                <input
-                  type="text"
-                  placeholder="Estado (UF)"
-                  value={novoEndereco.state}
-                  onChange={(e) => setNovoEndereco({ ...novoEndereco, state: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-                <input
-                  type="text"
-                  placeholder="Cidade"
-                  value={novoEndereco.city}
-                  onChange={(e) => setNovoEndereco({ ...novoEndereco, city: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-                {loading && <p className="text-sm text-blue-600">Buscando localização...</p>}
-                {novoEndereco.coordenadas && !loading && (
-                  <p className="text-sm text-green-600">
-                    Coordenadas: {novoEndereco.coordenadas.join(", ")}
-                  </p>
-                )}
-                <div className="flex justify-end">
-                  <button
-                    onClick={adicionarEndereco}
-                    disabled={!novoEndereco.coordenadas || loading}
-                    className={`px-4 py-2 rounded ${
-                      novoEndereco.coordenadas && !loading
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    Adicionar
-                  </button>
-                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Conteúdo Principal */}
+      <main className="p-6 max-w-7xl mx-auto pt-16">
+        {/* Cabeçalho da Página */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">Minhas Cidades</h1>
+            <p className="text-gray-600">
+              {citys.length > 0 
+                ? `Você tem ${citys.length} ${citys.length === 1 ? 'cidade' : 'cidades'} cadastradas`
+                : "Adicione sua primeira cidade para começar"}
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setMostrarFormulario(true)}
+            className="px-6 py-3 bg-gradient-to-r bg-amber-400 text-white rounded-xl hover: bg-[#f6d76b] transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium ">Adicionar Cidade</span>
+          </button>
+        </div>
+
+        {/* Grid de Cidades */}
+        {citys.length > 0 ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {citys.map((local, index) => (
+              <div
+                key={index}
+                onClick={() => navigate("/gerenciamentocidades", { state: { city: local } })}
+                className="cursor-pointer transition transform hover:scale-[1.02] active:scale-95"
+              >
+                <Quadrado
+                  imagem="../src/assets/images/city-buildings-svgrepo-com.svg"
+                  titulo={local.name}
+                  descricao={`${local.city}, ${local.state}`}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center border-2 border-dashed border-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">Nenhuma cidade cadastrada</h3>
+            <p className="mt-2 text-gray-600">Adicione sua primeira cidade para começar a gerenciar</p>
+            <button
+              onClick={() => setMostrarFormulario(true)}
+              className="mt-6 px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-colors shadow"
+            >
+              Adicionar Cidade
+            </button>
+          </div>
+        )}
+
+        {/* Modal de Adição de Cidade */}
+        {mostrarFormulario && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md animate-fade-in">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Nova Cidade</h2>
+                <button 
+                  onClick={() => setMostrarFormulario(false)} 
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                  aria-label="Fechar modal"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nome da Localidade</label>
+                  <input
+                    type="text"
+                    id="name"
+                    placeholder="Ex: Centro da Cidade"
+                    value={novoEndereco.name}
+                    onChange={(e) => setNovoEndereco({ ...novoEndereco, name: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">Estado (UF)</label>
+                    <input
+                      type="text"
+                      id="state"
+                      placeholder="Ex: SP"
+                      value={novoEndereco.state}
+                      onChange={(e) => setNovoEndereco({ ...novoEndereco, state: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                    <input
+                      type="text"
+                      id="city"
+                      placeholder="Ex: São Paulo"
+                      value={novoEndereco.city}
+                      onChange={(e) => setNovoEndereco({ ...novoEndereco, city: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="py-2">
+                  {loading ? (
+                    <div className="flex items-center space-x-2 text-blue-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-spin" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                      </svg>
+                      <span>Buscando localização...</span>
+                    </div>
+                  ) : novoEndereco.coordenadas ? (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="flex items-center space-x-2 text-green-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span>Localização encontrada!</span>
+                      </div>
+                      <p className="mt-1 text-xs text-green-600 font-mono">
+                        {novoEndereco.coordenadas.join(", ")}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-blue-700 flex items-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm">Preencha cidade e estado para buscar coordenadas</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFormulario(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={adicionarEndereco}
+                    disabled={!novoEndereco.coordenadas || loading}
+                    className={`px-4 py-2 rounded-lg text-white transition-colors ${
+                      novoEndereco.coordenadas && !loading
+                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                        : "bg-gray-300 cursor-not-allowed"
+                    }`}
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 };

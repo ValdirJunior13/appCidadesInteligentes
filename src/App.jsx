@@ -15,7 +15,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import "leaflet/dist/leaflet.css";
 import "./index.css";
 import PropTypes from "prop-types";
-import GerenciamentoCidades from "./pages/GerenciamentoCidade";
+import GerenciarCidades from "./pages/GerenciarCidades";
+import IrrigacaoControl from "./pages/IrrigacaoControl";
+import IluminacaoControl from "./pages/IluminacaoControl";
+import DrenagemControl from "./pages/DrenagemControl";
+
 const App = () => {
     return (
         <AuthProvider>
@@ -29,6 +33,10 @@ const App = () => {
                             </WithFullHeader>
                         }
                     />
+                    <Route path ="/drenagem" element = {<DrenagemControl />} />
+                    <Route path = "/iluminacao" element = {<IluminacaoControl />} />
+                    <Route path = "/irrigacao" element={<IrrigacaoControl />} />
+                    
                     <Route
                         path="/login"
                         element={
@@ -73,7 +81,7 @@ const App = () => {
         }
     />
     <Route
-        path="/iluminacao"
+        path="/iluminacaoInicio"
         element={
             <WithFullHeader>
                 <Iluminacao />
@@ -91,16 +99,16 @@ const App = () => {
     <Route
         path="/paginalogin"
         element={
-            <WithHeader hideBoth>
+
                 <LoginPage />
-            </WithHeader>
+
         }
     />
     <Route
         path="/gerenciamentocidades"
         element={
             <WithHeader>
-                <GerenciamentoCidades />
+                <GerenciarCidades />
             </WithHeader>
         }
     />
@@ -117,7 +125,6 @@ const App = () => {
     );
 };
 
-// Componentes auxiliares para o Header
 const WithFullHeader = ({ children }) => (
     <>
         <Header showLogin showRegister />
