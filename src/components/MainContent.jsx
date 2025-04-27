@@ -50,7 +50,6 @@ const MainContent = () => {
   };
 
   return (
-    /* imagem principal da página*/ 
     <div className="min-h-screen bg-sky-50 flex flex-col relative overflow-hidden">
       <img
         src="../src/assets/images/smart-city.png"

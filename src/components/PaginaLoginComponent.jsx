@@ -70,11 +70,19 @@ const PaginaLoginComponent = () => {
         pontos: { iluminacao: [], drenagem: [], lixo: [], irrigacao: [] },
       };
       setCitys([...citys, novaCidade]);
+      localStorage.setItem("cidades", JSON.stringify([...citys, novaCidade]));
       setNovoEndereco({ name: "", state: "", city: "", coordenadas: null });
       setMostrarFormulario(false);
     }
   };
+  useEffect(() => {
+    const cidadesSalvas = localStorage.getItem("cidades");
+    if (cidadesSalvas) {
+      setCitys(JSON.parse(cidadesSalvas));
+    }
+  }, []);
 
+  
   const handleLogoutClick = () => {
     logout();
     navigate("/login");
@@ -100,7 +108,7 @@ const PaginaLoginComponent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    
+
       <div className="bg-white bg-opacity-90 shadow-sm py-3 px-6 flex justify-end items-center sticky top-0 z-30 backdrop-blur-sm">
         <div className="relative">
           <button

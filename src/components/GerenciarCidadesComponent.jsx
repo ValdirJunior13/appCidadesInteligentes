@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useAuth } from '../context/AuthContext';
 import Cookies from "js-cookie";
+import Sidebar from "./Sidebar";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -92,71 +93,10 @@ const GerenciarCidadesComponent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Simplificada */}
-      <div className={`${showSidebar ? 'w-64' : 'w-20'} bg-blue-800 text-white transition-all duration-300 flex flex-col`}>
-        <div className="p-4 flex items-center justify-between border-b border-blue-700">
-          {showSidebar ? (
-            <h2 className="text-xl font-bold">Menu</h2>
-          ) : (
-            <div className="w-8 h-8 bg-blue-700 rounded-full"></div>
-          )}
-          <button 
-            onClick={handleToggleSidebar}
-            className="text-white hover:text-blue-200"
-          >
-            {showSidebar ? '◄' : '►'}
-          </button>
-        </div>
-        
-        <nav className="flex-1 overflow-y-auto py-4">
-          {showSidebar ? (
-            <ul className="space-y-2 px-4">
-              {["iluminacao", "drenagem", "lixo", "irrigacao"].map((cat) => (
-                <li key={cat}>
-                  <button
-                    onClick={() => handleCategoriaClick(cat)}
-                    className={`w-full text-left p-3 rounded-lg flex items-center transition-colors ${
-                      categoriaSelecionada === cat ? "bg-blue-700" : "hover:bg-blue-700"
-                    }`}
-                  >
-                    <span className="capitalize">{cat}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <ul className="space-y-4 px-2 py-4">
-              {["iluminacao", "drenagem", "lixo", "irrigacao"].map((cat) => (
-                <li key={cat}>
-                  <button
-                    onClick={() => handleCategoriaClick(cat)}
-                    className={`w-full p-2 rounded-lg flex justify-center transition-colors ${
-                      categoriaSelecionada === cat ? "bg-blue-700" : "hover:bg-blue-700"
-                    }`}
-                    title={cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  >
-                    <span className="text-xs uppercase">{cat.charAt(0)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </nav>
-
-        <div className="p-4 border-t border-blue-700">
-          <button 
-            onClick={() => navigate("/")}
-            className="flex items-center space-x-3 text-blue-200 hover:text-white"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            {showSidebar && <span>Voltar para cidades</span>}
-          </button>
-        </div>
-      </div>
-
       {/* Conteúdo Principal */}
+
+      <Sidebar activeItem={categoriaSelecionada} className={`${showSidebar ? "block" : "hidden md:block"}`}
+/>
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -193,7 +133,7 @@ const GerenciarCidadesComponent = () => {
             )}
           </div>
         </header>
-
+  
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
           {/* Seções de Informação e Configuração */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -205,7 +145,7 @@ const GerenciarCidadesComponent = () => {
                 <p>{citySelecionada.city}, {citySelecionada.state}</p>
               </div>
             </div>
-
+  
             {/* Configurações do Mapa */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Configurações do mapa</h2>
@@ -225,7 +165,7 @@ const GerenciarCidadesComponent = () => {
               </div>
             </div>
           </div>
-
+  
           {/* Mapa */}
           <section className="mb-8">
             <div className="h-96 w-full rounded-xl overflow-hidden shadow-lg border border-gray-200">
@@ -242,15 +182,15 @@ const GerenciarCidadesComponent = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                 />
-
+  
                 <MapViewControl center={citySelecionada.coordenadas} zoom={15} />
-
+  
                 <Marker position={citySelecionada.coordenadas} icon={customIcon}>
                   <Popup>
                     {citySelecionada.name}, {citySelecionada.city}
                   </Popup>
                 </Marker>
-
+  
                 {Object.entries(filtrosMapa).map(([categoria, ativo]) => (
                   ativo && citySelecionada.pontos[categoria].map((ponto, index) => (
                     <Marker key={`${categoria}-${index}`} position={ponto} icon={customIcon}>
@@ -263,7 +203,7 @@ const GerenciarCidadesComponent = () => {
               </MapContainer>
             </div>
           </section>
-
+  
           {/* Estatísticas */}
           <section className="bg-white rounded-xl shadow-md p-6 mb-8">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Estatísticas</h2>
@@ -286,7 +226,7 @@ const GerenciarCidadesComponent = () => {
               ))}
             </div>
           </section>
-
+  
           {/* Lista de Pontos da Categoria Selecionada */}
           {categoriaSelecionada && (
             <section className="bg-white rounded-xl shadow-md p-6">

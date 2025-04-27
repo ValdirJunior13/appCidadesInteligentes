@@ -15,13 +15,13 @@ const ConfiguracaoCidade = () => {
   };
 
   const adicionarGerente = () => {
-    if (gerentes.length < 5) { // Limite máximo de 5 linhas
+    if (gerentes.length < 5) { 
       setGerentes([...gerentes, { nome: '', cargo: '', id: '' }]);
     }
   };
 
   const removerGerente = () => {
-    if (gerentes.length > 1) { // Mantém pelo menos uma linha
+    if (gerentes.length > 1) { 
       setGerentes(gerentes.slice(0, -1));
     }
   };
