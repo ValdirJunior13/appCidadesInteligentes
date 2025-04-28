@@ -21,6 +21,7 @@ import IluminacaoControl from "./pages/IluminacaoControl";
 import DrenagemControl from "./pages/DrenagemControl";
 import ConfiguracaoComponent from "./pages/ConfiguracaoComponent";    
 
+
 const App = () => {
     return (
         <AuthProvider>
@@ -84,7 +85,7 @@ const App = () => {
         }
     />
     <Route
-        path="/iluminacaoInicio"
+        path="/iluminacaoinicio"
         element={
             <WithFullHeader>
                 <Iluminacao />
@@ -102,17 +103,14 @@ const App = () => {
     <Route
         path="/paginalogin"
         element={
-
                 <LoginPage />
-
         }
     />
     <Route
         path="/gerenciamentocidades"
         element={
-            <WithHeader>
+
                 <GerenciarCidades />
-            </WithHeader>
         }
     />
 </Route>

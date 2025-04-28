@@ -20,7 +20,7 @@ const Header = ({ showLogin = true, showRegister = true }) => {
                 </div>
                 <div className="hidden lg:flex lg:gap-x-12">
                     <Link to="/lixo" className="text-sm/6 font-semibold text-gray-900 hover:text-[#0360D9] transition-colors">Controle de Lixo</Link>
-                    <Link to="/iluminacao" className="text-sm/6 font-semibold text-gray-900 hover:text-[#0360D9] transition-colors">Iluminação</Link>
+                    <Link to="/iluminacaoinicio" className="text-sm/6 font-semibold text-gray-900 hover:text-[#0360D9] transition-colors">Iluminação</Link>
                     <Link to="/hidrico" className="text-sm/6 font-semibold text-gray-900 hover:text-[#0360D9] transition-colors">Drenagem</Link>
                     <Link to="/data" className="text-sm/6 font-semibold text-gray-900 hover:text-[#0360D9] transition-colors">Dados</Link>
                 </div>

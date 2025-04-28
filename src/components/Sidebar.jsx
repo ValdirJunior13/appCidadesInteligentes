@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Sidebar = ({ activeItem }) => {
+const Sidebar = ({ activeItem, cidadeAtual}) => {
 const navigate = useNavigate();
 const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -14,20 +14,22 @@ const menuItems = [
 ];
 
 const handleNavigation = (itemName) => {
+    if (itemName === 'configuracoes') {
+    navigate(`/${itemName}`, { state: cidadeAtual });
+    } else {
     navigate(`/${itemName}`);
+    }
 };
-
 const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
 };
 
 const handleGoBack = () => {
-    navigate('/paginalogin'); // Botão novo para voltar
+    navigate('/paginalogin'); 
 };
 
 return (
     <aside className={`${isCollapsed ? 'w-20' : 'w-60'} bg-zinc-900 text-white p-4 flex flex-col space-y-4 transition-all duration-300`}>
-      {/* Cabeçalho com botão de toggle (original) */}
     <button 
         onClick={toggleSidebar}
         className="text-lg font-semibold mb-6 flex justify-between items-center"
@@ -37,8 +39,7 @@ return (
         {isCollapsed ? '▶' : '◀'}
         </span>
     </button>
-
-      {/* Itens do menu (original) */}
+    
     {!isCollapsed && menuItems.map((item) => (
         <button
         key={item.name}

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { auth, googleProvider, appleProvider, signInWithPopup } from "../components/firebaseConfig";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import { registerUser } from '../context/authApi';
+
 
 const CadastroComponent = () => {
   const [formData, setFormData] = useState({
@@ -42,39 +45,39 @@ const CadastroComponent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateFields()) return;
-    
+
     setLoading({...loading, form: true});
     
     try {
-      const response = await fetch("http://localhost:3000/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.user_name,
-          password: formData.password,
-          name: formData.name,
-          email: formData.email,
-          cellphone: formData.cellphone,
-          cpf_cnpj: formData.cpf_cnpj
-        })
+
+      const response = await registerUser({
+        username: formData.user_name,
+        password: formData.password,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.cellphone,
+        document: formData.cpf_cnpj
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Erro no cadastro");
-      }
-
-      navigate("/login", { 
-        state: { 
-          successMessage: "Cadastro realizado com sucesso! Faça login para continuar." 
-        } 
+      Cookies.set('auth_token', response.token, {
+        expires: 1, 
+        secure: true,
+        sameSite: 'Strict'
       });
+      
+      Cookies.set('user_name', response.user.username, {
+        expires: 1,
+        path: '/'
+      });
+
+      navigate("/dashboard", {
+        state: {
+          user: response.user
+        }
+      });
+
     } catch (error) {
-      console.error("Error:", error);
-      setError(error.message || "Erro ao conectar com o servidor");
+      setError(error.response?.data?.message || "Erro no cadastro");
     } finally {
       setLoading({...loading, form: false});
     }
@@ -82,59 +85,20 @@ const CadastroComponent = () => {
 
   const handleSocialLogin = async (provider, type) => {
     setLoading({...loading, [type]: true});
-    setError("");
     
     try {
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      setFormData({
-        ...formData,
-        name: user.displayName || "",
-        email: user.email || "",
-        user_name: user.email?.split('@')[0] || `user_${Math.random().toString(36).substr(2, 8)}`
+      const idToken = await result.user.getIdToken();
+  
+      const response = await axios.post(`${API_URL}/auth/social`, {
+        token: idToken,
+        provider: type
       });
-
-      try {
-        const response = await fetch("http://localhost:3000/api/cadastro", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: user.email?.split('@')[0],
-            email: user.email,
-            name: user.displayName,
-            authProvider: type
-          }),
-        });
-
-        if (response.ok) {
-          navigate("/home");
-        } else {
-          setError("Complete os campos restantes e clique em Registrar Conta");
-        }
-      } catch (apiError) {
-        console.error("API Error:", apiError);
-        setError("Complete os campos restantes para finalizar");
-      }
-    } catch (error) {
-      console.error(`${type} Error:`, error);
-      let errorMessage = `Erro ao autenticar com ${type === 'google' ? 'Google' : 'Apple'}`;
+      Cookies.set('auth_token', response.data.token);
+      navigate("/dashboard");
       
-      if (error.code) {
-        switch (error.code) {
-          case 'auth/popup-closed-by-user':
-            errorMessage = "O popup foi fechado antes de completar";
-            break;
-          case 'auth/account-exists-with-different-credential':
-            errorMessage = "Este email já está cadastrado com outro método";
-            break;
-          default:
-            errorMessage = error.message || errorMessage;
-        }
-      }
-      setError(errorMessage);
+    } catch (error) {
+      setError(error.response?.data?.message || "Erro no login social");
     } finally {
       setLoading({...loading, [type]: false});
     }

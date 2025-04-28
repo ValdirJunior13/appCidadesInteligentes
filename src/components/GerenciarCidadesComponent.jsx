@@ -39,7 +39,7 @@ const GerenciarCidadesComponent = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const mapRef = useRef(null);
-  
+
   const [filtrosMapa, setFiltrosMapa] = useState({
     iluminacao: true,
     irrigacao: true,
@@ -62,14 +62,7 @@ const GerenciarCidadesComponent = () => {
     }
   }, [categoriaSelecionada, citySelecionada]);
 
-  const handleCategoriaClick = (categoria) => {
-    if (categoria === "irrigacao") {
-      navigate("/irrigacao", { state: { city: citySelecionada } });
-    } else {
-      setCategoriaSelecionada(categoria);
-    }
-  };
-  
+
   const handleLogoutClick = () => {
     logout();
     navigate("/login");
@@ -95,7 +88,7 @@ const GerenciarCidadesComponent = () => {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Conteúdo Principal */}
 
-      <Sidebar activeItem={categoriaSelecionada} className={`${showSidebar ? "block" : "hidden md:block"}`}
+      <Sidebar activeItem={categoriaSelecionada} className={`${showSidebar ? "block" : "hidden md:block"}` }
 />
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
@@ -135,9 +128,9 @@ const GerenciarCidadesComponent = () => {
         </header>
   
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          {/* Seções de Informação e Configuração */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Informações da Cidade */}
+
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Informações da cidade</h2>
               <div className="space-y-2">

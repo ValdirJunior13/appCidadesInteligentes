@@ -3,19 +3,30 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Cookies from "js-cookie";
 import Quadrado from "../components/Quadrado";
-import Sidebar from "../components/Sidebar";
+
+
 
 const PaginaLoginComponent = () => {
+
   const navigate = useNavigate();
   const { usuarioLogado, logout } = useAuth();
   const [citys, setCitys] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [novoEndereco, setNovoEndereco] = useState({
+    user_name: Cookies.get("userName"),
     name: "",
     state: "",
     city: "",
+    validation_hash: "",
     coordenadas: null,
   });
+  const generateTempHash = () => {
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `temp-hash-${timestamp}-${randomStr}`;
+  };
+
+  const userName = Cookies.get("userName") || "Usuário";
   const [loading, setLoading] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -62,19 +73,56 @@ const PaginaLoginComponent = () => {
       return () => clearTimeout(timer);
     }
   }, [novoEndereco.city, novoEndereco.state, mostrarFormulario]);
-
-  const adicionarEndereco = () => {
+  
+  const adicionarEndereco = async () => {
     if (novoEndereco.name && novoEndereco.state && novoEndereco.city && novoEndereco.coordenadas) {
-      const novaCidade = {
-        ...novoEndereco,
-        pontos: { iluminacao: [], drenagem: [], lixo: [], irrigacao: [] },
-      };
-      setCitys([...citys, novaCidade]);
-      localStorage.setItem("cidades", JSON.stringify([...citys, novaCidade]));
-      setNovoEndereco({ name: "", state: "", city: "", coordenadas: null });
-      setMostrarFormulario(false);
+      try {
+        setLoading(true);
+        
+        // -----------------------------------------------
+        // PARA QUANDO INTEGRAR COM O BACKEND:
+        // Substitua todo este bloco pela chamada real à API
+        // -----------------------------------------------
+        
+        // Gera hash temporário (remova quando usar o backend)
+        const tempValidationHash = generateTempHash();
+        console.log("Hash temporário gerado:", tempValidationHash);
+        
+        // Simula resposta do backend (remova depois)
+        const mockResponse = {
+          validation_hash: tempValidationHash,
+          status: "success"
+        };
+        // -----------------------------------------------
+        
+
+        const novaCidade = {
+          ...novoEndereco,
+          validation_hash: mockResponse.validation_hash, 
+          pontos: { iluminacao: [], drenagem: [], lixo: [], irrigacao: [] },
+          user_name: Cookies.get("userName")
+        };
+        
+        setCitys([...citys, novaCidade]);
+        localStorage.setItem("cidades", JSON.stringify([...citys, novaCidade]));
+        
+        setNovoEndereco({ 
+          name: "", 
+          state: "", 
+          city: "", 
+          coordenadas: null,
+          validation_hash: "" 
+        });
+        setMostrarFormulario(false);
+        
+      } catch (error) {
+        console.error("Erro ao adicionar cidade:", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
+
   useEffect(() => {
     const cidadesSalvas = localStorage.getItem("cidades");
     if (cidadesSalvas) {
@@ -82,7 +130,6 @@ const PaginaLoginComponent = () => {
     }
   }, []);
 
-  
   const handleLogoutClick = () => {
     logout();
     navigate("/login");
@@ -183,7 +230,7 @@ const PaginaLoginComponent = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-1">Minhas Cidades</h1>
             <p className="text-gray-600">
               {citys.length > 0 
-                ? `Você tem ${citys.length} ${citys.length === 1 ? 'cidade' : 'cidades'} cadastradas`
+                ? `Olá ${userName}, Você tem ${citys.length} ${citys.length === 1 ? 'cidade' : 'cidades'} cadastradas`
                 : "Adicione sua primeira cidade para começar"}
             </p>
           </div>
@@ -256,7 +303,7 @@ const PaginaLoginComponent = () => {
                   <input
                     type="text"
                     id="name"
-                    placeholder="Ex: Centro da Cidade"
+                    placeholder="Ex: Cohab"
                     value={novoEndereco.name}
                     onChange={(e) => setNovoEndereco({ ...novoEndereco, name: e.target.value })}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
