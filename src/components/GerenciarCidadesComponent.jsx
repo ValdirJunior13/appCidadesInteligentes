@@ -40,13 +40,9 @@ const GerenciarCidadesComponent = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const mapRef = useRef(null);
 
-  const [filtrosMapa, setFiltrosMapa] = useState({
-    iluminacao: true,
-    irrigacao: true,
-    drenagem: true,
-    lixo: true
-  });
-
+const [tempFiltrosMapa, setTempFiltrosMapa] = useState({
+  iluminacao: true, irrigacao: true, drenagem: true, lixo: true}); 
+  const [filtrosMapa, setFiltrosMapa] = useState({ ...tempFiltrosMapa });
   useEffect(() => {
     if (!usuarioLogado) {
       navigate("/login");
@@ -72,18 +68,20 @@ const GerenciarCidadesComponent = () => {
     setShowSidebar(!showSidebar);
   };
 
-  const handleFiltroChange = (categoria) => {
-    setFiltrosMapa(prev => ({
-      ...prev,
-      [categoria]: !prev[categoria]
-    }));
-  };
+const handleTempFiltroChange = (categoria) => { setTempFiltrosMapa(prev => ({...prev, [categoria]: !prev[categoria] }));
+};
 
   if (!usuarioLogado || !citySelecionada) {
     return null;
   }
   
 
+  const confirmarFiltros = () => {
+    setFiltrosMapa({ ...tempFiltrosMapa });
+    console.log("Filtros aplicados:", tempFiltrosMapa);
+  };
+
+  
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Conteúdo Principal */}
@@ -146,16 +144,20 @@ const GerenciarCidadesComponent = () => {
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(filtrosMapa).map(([categoria, ativo]) => (
                   <label key={categoria} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={ativo}
-                      onChange={() => handleFiltroChange(categoria)}
-                      className="rounded h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    <input 
+                    type="checkbox"
+                    checked={tempFiltrosMapa[categoria]}
+                    onChange={() => handleTempFiltroChange(categoria)}
                     />
                     <span className="capitalize text-sm">{categoria}</span>
                   </label>
                 ))}
               </div>
+      {/* botão de aplicar filtros */}<button
+              onClick={confirmarFiltros}
+className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+> Confirmar filtros
+          </button>
             </div>
           </div>
   
