@@ -6,7 +6,7 @@ const FooterComponent = () => {
                 <div className="md:w-1/3 px-4">
                     <h1 className="text-2xl font-bold">Serviço Eletrônico</h1>
                     <p className="mt-2 text-gray-200 text-sm">
-                        Um sistema unificado de gerenciamento para cidades inteligentes, integrando diversas áreas do IoT, como iluminação inteligente, lixeiras inteligentes, controle de drenagem e irrigação automática. A proposta inclui a criação de uma maquete de uma cidade ou condomínio para demonstrar o controle desses dispositivos por meio do sistema. Essa iniciativa pode trazer oportunidades na Virtus, já que ainda não existe um sistema desse tipo.
+                        Um sistema unificado de gerenciamento para cidades inteligentes, integrando diversas áreas do IoT, como iluminação inteligente, lixeiras inteligentes, controle de drenagem e irrigação automática. A proposta inclui a criação de uma maquete de uma cidade ou condomínio para demonstrar o controle desses dispositivos por meio do sistema. 
                     </p>
                     <div className="flex justify-center md:justify-start space-x-4 mt-4">
                         <a href="https://www.instagram.com/" className="text-gray-200 hover:text-white">
