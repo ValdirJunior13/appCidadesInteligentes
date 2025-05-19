@@ -6,39 +6,40 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
     usuarioLogado: false,
-    userData: null
+    userData: null,
   });
 
   useEffect(() => {
-    const token = Cookies.get("authToken");
     const userName = Cookies.get("userName");
-    
-    if (token && userName) {
+    const password = Cookies.get("userPassword"); 
+
+    if (userName && password) {
       setAuthState({
         usuarioLogado: true,
         userData: {
-          token,
-          nome: userName,
-          email: sessionStorage.getItem("userEmail") || ""
-        }
+          user_name: userName,
+          password: password,
+        },
       });
     }
   }, []);
 
-  const login = ({ token, nome, email }) => {
-    Cookies.set("authToken", token, { expires: 1, path: "/" });
-    Cookies.set("userName", nome, { expires: 1, path: "/" });
-    sessionStorage.setItem("userEmail", email);
-    
+  const login = ({ user_name, password }) => {
+    Cookies.set("userName", user_name, { expires: 1, path: "/" });
+    Cookies.set("userPassword", password, { expires: 1, path: "/" });
+
     setAuthState({
       usuarioLogado: true,
-      userData: { token, nome, email }
+      userData: {
+        user_name,
+        password,
+      },
     });
   };
-  
+
   const logout = () => {
-    Cookies.remove("authToken", { path: "/" });
     Cookies.remove("userName", { path: "/" });
+    Cookies.remove("userPassword", { path: "/" });
     sessionStorage.clear();
     setAuthState({ usuarioLogado: false, userData: null });
   };

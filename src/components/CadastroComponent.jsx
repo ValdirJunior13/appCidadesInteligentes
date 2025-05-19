@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios"; 
 import { auth, googleProvider, appleProvider, signInWithPopup } from "../components/firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -20,6 +21,7 @@ const CadastroComponent = () => {
     apple: false,
     form: false
   });
+  const [rememberMe, setRememberMe] = useState(false);  
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -33,9 +35,10 @@ const CadastroComponent = () => {
       setError("Todos os campos devem ser preenchidos.");
       return false;
     }
-    const cpf_cnpjRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-    if (!cpf_cnpjRegex.test(formData.cpf_cnpj)) {
-      setError("CPF inválido. Formato correto: 000.000.000-00");
+
+    const cpfCnpjRegex = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})$/;
+    if (!cpfCnpjRegex.test(formData.cpf_cnpj)) {
+      setError("CPF ou CNPJ inválido. Formatos aceitos: 000.000.000-00 ou 00.000.000/0000-00");
       return false;
     }
     setError("");
@@ -44,40 +47,55 @@ const CadastroComponent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateFields()) return;
+    if (!validateFields()) {
+
+    console.log("Dados sendo enviados:", formData); /
+
+  try {
+    const response = await registerUser(formData);
+    console.log("Resposta da API:", response); 
+  } catch (error) {
+    console.error("Erro completo:", error);
+    console.error("Detalhes da resposta:", error.response?.data);
+  }
+};
 
     setLoading({...loading, form: true});
     
     try {
 
-      const response = await registerUser({
-        username: formData.user_name,
-        password: formData.password,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.cellphone,
-        document: formData.cpf_cnpj
+    const response = await registerUser({
+      user_name: formData.user_name,
+      password: formData.password,
+      name: formData.name,
+      email: formData.email,
+      cellphone: formData.cellphone,
+      cpf_cnpj: formData.cpf_cnpj
       });
 
-      Cookies.set('auth_token', response.token, {
-        expires: 1, 
-        secure: true,
-        sameSite: 'Strict'
-      });
-      
-      Cookies.set('user_name', response.user.username, {
-        expires: 1,
+      const { token, user } = response;
+
+      Cookies.set('auth_token', token, {
+      expires: rememberMe ? 7 : 1,
+      secure: true,
+      sameSite: 'Strict'
+        });
+
+      Cookies.set('user_name', user.username, {
+        expires: rememberMe ? 7 : 1,
         path: '/'
       });
 
-      navigate("/dashboard", {
-        state: {
-          user: response.user
-        }
+      navigate("/paginaLogin", {
+      state: { user }
       });
 
     } catch (error) {
-      setError(error.response?.data?.message || "Erro no cadastro");
+      setError(
+        error.response?.data?.message || 
+        error.message || 
+        "Erro no cadastro"
+      );
     } finally {
       setLoading({...loading, form: false});
     }

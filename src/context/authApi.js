@@ -2,10 +2,10 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = 'http://56.125.35.215:8000'; 
 
 export const registerUser = async (userData) => {
-  const response = await axios.post(`${API_URL}/user/create`, userData);
+  const response = await axios.post(`${API_URL}/register/`, userData); 
   return response.data;
 };
 
