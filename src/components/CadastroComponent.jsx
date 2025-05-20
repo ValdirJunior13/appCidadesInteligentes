@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { registerUser } from '../context/authApi';
 
-
 const CadastroComponent = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -35,92 +34,81 @@ const CadastroComponent = () => {
       setError("Todos os campos devem ser preenchidos.");
       return false;
     }
+    cpf_cnpj: formData.cpf_cnpj.replace(/\D/g, '') 
 
-    const cpfCnpjRegex = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})$/;
-    if (!cpfCnpjRegex.test(formData.cpf_cnpj)) {
-      setError("CPF ou CNPJ inválido. Formatos aceitos: 000.000.000-00 ou 00.000.000/0000-00");
-      return false;
-    }
     setError("");
     return true;
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateFields()) {
+  e.preventDefault();
+  if (!validateFields()) return;
 
-    console.log("Dados sendo enviados:", formData); /
+  console.log("Dados sendo enviados:", formData);
 
+  setLoading({...loading, form: true});
+  
   try {
-    const response = await registerUser(formData);
-    console.log("Resposta da API:", response); 
-  } catch (error) {
-    console.error("Erro completo:", error);
-    console.error("Detalhes da resposta:", error.response?.data);
-  }
-};
 
-    setLoading({...loading, form: true});
-    
-    try {
+    const payload = {
+      ...formData,
+      cpf_cnpj: formData.cpf_cnpj.replace(/\D/g, '')
+    };
 
-    const response = await registerUser({
-      user_name: formData.user_name,
-      password: formData.password,
-      name: formData.name,
-      email: formData.email,
-      cellphone: formData.cellphone,
-      cpf_cnpj: formData.cpf_cnpj
-      });
+    const response = await registerUser(payload);
+    console.log("Resposta da API:", response);
 
-      const { token, user } = response;
+    const { token, user } = response;
 
-      Cookies.set('auth_token', token, {
+    Cookies.set('auth_token', token, {
       expires: rememberMe ? 7 : 1,
       secure: true,
       sameSite: 'Strict'
-        });
+    });
 
-      Cookies.set('user_name', user.username, {
-        expires: rememberMe ? 7 : 1,
-        path: '/'
-      });
+    Cookies.set('user_name', user.user_name, {  
+      expires: rememberMe ? 7 : 1,
+      path: '/'
+    });
 
-      navigate("/paginaLogin", {
+    navigate("/paginaLogin", {
       state: { user }
-      });
+    });
 
-    } catch (error) {
-      setError(
-        error.response?.data?.message || 
-        error.message || 
-        "Erro no cadastro"
-      );
-    } finally {
-      setLoading({...loading, form: false});
-    }
-  };
+  } catch (error) {
+    console.error("Erro completo:", error);
+    setError(
+      error.response?.data?.message || 
+      error.message || 
+      "Erro no cadastro"
+    );
+  } finally {
+    setLoading({...loading, form: false});
+  }
+};
 
   const handleSocialLogin = async (provider, type) => {
-    setLoading({...loading, [type]: true});
-    
+    setLoading({ ...loading, [type]: true });
+
     try {
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
-  
+
       const response = await axios.post(`${API_URL}/auth/social`, {
         token: idToken,
         provider: type
       });
+
       Cookies.set('auth_token', response.data.token);
-      navigate("/dashboard");
-      
+      navigate("/paginaLogin");
+
     } catch (error) {
       setError(error.response?.data?.message || "Erro no login social");
     } finally {
-      setLoading({...loading, [type]: false});
+      setLoading({ ...loading, [type]: false });
     }
   };
+
 
   return (
     <div className="w-full md:w-1/2 flex items-center justify-center min-h-screen bg-blue-50 p-4">

@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Cookies from "js-cookie";
 import Quadrado from "../components/Quadrado";
-
-
+import { generateValidationHash } from "../utils/hash";
 
 const PaginaLoginComponent = () => {
 
@@ -12,19 +11,15 @@ const PaginaLoginComponent = () => {
   const { usuarioLogado, logout } = useAuth();
   const [citys, setCitys] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const [novoEndereco, setNovoEndereco] = useState({
-    user_name: Cookies.get("userName"),
-    name: "",
-    state: "",
-    city: "",
-    validation_hash: "",
-    coordenadas: null,
-  });
-  const generateTempHash = () => {
-    const timestamp = Date.now().toString(36);
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    return `temp-hash-${timestamp}-${randomStr}`;
-  };
+  user_name: Cookies.get("userName"),
+  name: "",
+  state: "",
+  city: "",
+  validation_hash: "",
+  coordenadas: null,
+});
 
   const userName = Cookies.get("userName") || "Usuário";
   const [loading, setLoading] = useState(false);
@@ -43,6 +38,16 @@ const PaginaLoginComponent = () => {
           `${novoEndereco.city}, ${novoEndereco.state}, Brasil`
         )}&countrycodes=br&addressdetails=1`
       );
+
+      if (!initialized) {
+    const validationHash = generateValidationHash();
+    console.log("Gerando novo validationHash:", validationHash);
+    
+    Cookies.set("validationHash", validationHash, {
+      path: "/",
+      expires: 7 
+    });
+
       const data = await response.json();
       if (data?.length > 0) {
         const match = data.find((item) => {
@@ -74,84 +79,84 @@ const PaginaLoginComponent = () => {
     }
   }, [novoEndereco.city, novoEndereco.state, mostrarFormulario]);
   
-  const adicionarEndereco = async () => {
-    if (novoEndereco.name && novoEndereco.state && novoEndereco.city && novoEndereco.coordenadas) {
-      try {
-        setLoading(true);
-        
-        // -----------------------------------------------
-        // PARA QUANDO INTEGRAR COM O BACKEND:
-        // Substitua todo este bloco pela chamada real à API
-        // -----------------------------------------------
-        
-        // Gera hash temporário (remova quando usar o backend)
-        const tempValidationHash = generateTempHash();
-        console.log("Hash temporário gerado:", tempValidationHash);
-        
-        // Simula resposta do backend (remova depois)
-        const mockResponse = {
-          validation_hash: tempValidationHash,
-          status: "success"
-        };
-        // -----------------------------------------------
-        
-
-        const novaCidade = {
-          ...novoEndereco,
-          validation_hash: mockResponse.validation_hash, 
-          pontos: { iluminacao: [], drenagem: [], lixo: [], irrigacao: [] },
-          user_name: Cookies.get("userName")
-        };
-        
-        setCitys([...citys, novaCidade]);
-        localStorage.setItem("cidades", JSON.stringify([...citys, novaCidade]));
-        
-        setNovoEndereco({ 
-          name: "", 
-          state: "", 
-          city: "", 
-          coordenadas: null,
-          validation_hash: "" 
-        });
-        setMostrarFormulario(false);
-        
-      } catch (error) {
-        console.error("Erro ao adicionar cidade:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const cidadesSalvas = localStorage.getItem("cidades");
-    if (cidadesSalvas) {
-      setCitys(JSON.parse(cidadesSalvas));
-    }
-  }, []);
-
-  const handleLogoutClick = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const handleAccountOption = (opcao) => {
-    setShowUserMenu(false);
-    if (opcao === "email") {
-      navigate("/alterar-email");
-    } else if (opcao === "senha") {
-      navigate("/alterar-senha");
-    } else if (opcao === "dados") {
-      navigate("/alterar-dados");
-    } else if(opcao === "sair"){
-      navigate("/login");
-    } else if(opcao === "Voltar ao Menu?"){
-      navigate("/home");
-
-    }
-  };
   
-  if (!usuarioLogado) return null;
+  useEffect(() => {
+   const validationHash = generateValidationHash();
+   Cookies.set("validationHash", validationHash, {
+     path: "/",
+  });
+  console.log("→ validationHash salvo no cookie:", Cookies.get("validationHash"));
+   setNovoEndereco((prev) => ({
+     ...prev,
+     validation_hash: validationHash,
+   }));
+ }, []);
+
+
+  const adicionarEndereco = async () => {
+  if (
+    novoEndereco.name &&
+    novoEndereco.state &&
+    novoEndereco.city &&
+    novoEndereco.coordenadas
+  ) {
+    try {
+      setLoading(true);
+
+      const payload = {
+        user_name: Cookies.get("userName"),
+        name: novoEndereco.name,
+        state: novoEndereco.state,
+        city: novoEndereco.city,
+        validation_hash: novoEndereco.validation_hash,
+      };
+
+      const response = await fetch("http://56.125.35.215:8000/user/create-city", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao criar cidade no servidor");
+      }
+
+      const data = await response.json();
+
+      const novaCidade = {
+        ...novoEndereco,
+        validation_hash: payload.validation_hash,
+        user_name: payload.user_name,
+      };
+
+      setCitys((prevCitys) => {
+        const cidadesAtualizadas = [...prevCitys, novaCidade];
+        const chaveCidadesUsuario = `cidades_${payload.user_name}_${payload.validation_hash}`;
+        localStorage.setItem(chaveCidadesUsuario, JSON.stringify(cidadesAtualizadas));
+        return cidadesAtualizadas;
+      });
+      setNovoEndereco({
+        name: "",
+        state: "",
+        city: "",
+        coordenadas: null,
+        validation_hash: payload.validation_hash,
+        user_name: payload.user_name,
+      });
+      setMostrarFormulario(false);
+    } catch (error) {
+      console.error("Erro ao adicionar cidade:", error);
+      alert("Erro ao criar cidade. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  } else {
+    alert("Preencha todos os campos e aguarde a localização ser buscada.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
