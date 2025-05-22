@@ -9,42 +9,51 @@ export const AuthProvider = ({ children }) => {
     userData: null,
   });
 
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
   useEffect(() => {
     const checkAuth = () => {
       const userName = Cookies.get("userName");
-      if (userName) {
+      const validationHash = Cookies.get("validation_hash");
+
+      if (userName && validationHash) {
         setAuthState({
           usuarioLogado: true,
-          userData: { user_name: userName },
+          userData: { user_name: userName, validation_hash: validationHash },
         });
       }
+
+      setLoadingAuth(false);
     };
+
     checkAuth();
   }, []);
 
- const login = async ({ user_name, validation_hash }) => {
-  Cookies.set("userName", user_name, { 
-    expires: 1, 
-    path: "/", 
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  });
+  const login = async ({ user_name, validation_hash }) => {
+    Cookies.set("userName", user_name, {
+      expires: 1,
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
 
-  Cookies.set("validation_hash", validation_hash, { 
-    expires: 1, 
-    path: "/", 
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  });
+    Cookies.set("validation_hash", validation_hash, {
+      expires: 1,
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
 
-  setAuthState({
-    usuarioLogado: true,
-    userData: { user_name, validation_hash },
-  });
-};
+    setAuthState({
+      usuarioLogado: true,
+      userData: { user_name, validation_hash },
+    });
+  };
 
   const logout = () => {
     Cookies.remove("userName", { path: "/" });
+    Cookies.remove("validation_hash", { path: "/" });
+
     setAuthState({
       usuarioLogado: false,
       userData: null,
@@ -52,12 +61,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        usuarioLogado: authState.usuarioLogado,
+        userData: authState.userData,
+        login,
+        logout,
+        loadingAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Hook personalizado
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

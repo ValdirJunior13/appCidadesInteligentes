@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Cookies from "js-cookie";
 import Quadrado from "../components/Quadrado";
+// Importando o contexto de autenticação
 
 const PaginaLoginComponent = () => {
   const navigate = useNavigate();
-  const { usuarioLogado, logout } = useAuth();
+  const { usuarioLogado, logout, loadingAuth  } = useAuth();
   const [citys, setCitys] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [novoEndereco, setNovoEndereco] = useState({
@@ -21,9 +22,6 @@ const PaginaLoginComponent = () => {
   const [loading, setLoading] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  useEffect(() => {
-    if (!usuarioLogado) navigate("/login");
-  }, [usuarioLogado, navigate]);
 
   const buscarCoordenadas = async () => {
     if (!novoEndereco.city || !novoEndereco.state) return;
@@ -87,7 +85,6 @@ const PaginaLoginComponent = () => {
           name: novoEndereco.name,
           state: novoEndereco.state,
           city: novoEndereco.city,
-          coordenadas: novoEndereco.coordenadas,
           validation_hash: Cookies.get("validation_hash"),
         }),
       });
@@ -140,6 +137,54 @@ const PaginaLoginComponent = () => {
 
 
 
+const buscarCidades = async () => {
+  try {
+    setLoading(true);
+    const userName = Cookies.get("userName");
+    const validationHash = Cookies.get("validation_hash");
+
+    // Primeiro tente do cache
+    const cached = localStorage.getItem(`cidades_${userName}`);
+    if (cached) {
+      setCitys(JSON.parse(cached));
+    }
+
+    const response = await fetch(`http://56.125.35.215:8000/user/get-cities?user_name=${userName}&validation_hash=${validationHash}`);
+    
+    if (!response.ok) {
+      throw new Error("Erro ao buscar cidades");
+    }
+
+    const data = await response.json();
+    setCitys(data);
+    localStorage.setItem(`cidades_${userName}`, JSON.stringify(data));
+  } catch (error) {
+    console.error("Erro ao buscar:", error);
+
+    if (!citys.length) {
+      alert("Erro ao buscar cidades. Usando dados locais.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+const handleCityClick = (city) => {
+  sessionStorage.setItem('currentCityId', city.id);
+  navigate("/gerenciamentocidades", { state: { city } });
+};
+
+useEffect(() => {
+  if (!loadingAuth && !usuarioLogado) {
+    navigate("/login");
+  }
+}, [usuarioLogado, navigate, loadingAuth]);
+
+
+useEffect(() => {
+  if (usuarioLogado) {
+    buscarCidades();
+  }
+}, [usuarioLogado]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -240,7 +285,9 @@ const PaginaLoginComponent = () => {
             {citys.map((local, index) => (
               <div
                 key={index}
-                onClick={() => navigate("/gerenciamentocidades", { state: { city: local } })}
+                onClick={() =>
+               handleCityClick(local)}
+                                
                 className="cursor-pointer transition transform hover:scale-[1.02] active:scale-95"
               >
                 <Quadrado

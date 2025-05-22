@@ -13,22 +13,6 @@ const LoginComponent = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  function salvarHashEmLista(userName, novoHash) {
-  const chaveCookie = `hashes_${userName}`;
-  const listaHashAtual = Cookies.get(chaveCookie);
-
-  let hashes = [];
-  try {
-    hashes = listaHashAtual ? JSON.parse(listaHashAtual) : [];
-  } catch (e) {
-    console.warn("Erro ao parsear hashes salvos:", e);
-  }
-
-  if (!hashes.includes(novoHash)) {
-    hashes.push(novoHash);
-    Cookies.set(chaveCookie, JSON.stringify(hashes), { expires: 7 }); // expira em 7 dias
-  }
-}
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -59,7 +43,7 @@ const LoginComponent = () => {
 
     const data = await response.json();
 
-     salvarHashEmLista(formData.user_name, data.hashing);
+   
 
     await login({
       user_name: data.user_name,
