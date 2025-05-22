@@ -3,23 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Cookies from "js-cookie";
 import Quadrado from "../components/Quadrado";
-import { generateValidationHash } from "../utils/hash";
 
 const PaginaLoginComponent = () => {
-
   const navigate = useNavigate();
   const { usuarioLogado, logout } = useAuth();
   const [citys, setCitys] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [initialized, setInitialized] = useState(false);
   const [novoEndereco, setNovoEndereco] = useState({
-  user_name: Cookies.get("userName"),
-  name: "",
-  state: "",
-  city: "",
-  validation_hash: "",
-  coordenadas: null,
-});
+    user_name: Cookies.get("userName"),
+    name: "",
+    state: "",
+    city: "",
+    coordenadas: null,
+  });
 
   const userName = Cookies.get("userName") || "Usuário";
   const [loading, setLoading] = useState(false);
@@ -39,26 +35,18 @@ const PaginaLoginComponent = () => {
         )}&countrycodes=br&addressdetails=1`
       );
 
-      if (!initialized) {
-    const validationHash = generateValidationHash();
-    console.log("Gerando novo validationHash:", validationHash);
-    
-    Cookies.set("validationHash", validationHash, {
-      path: "/",
-      expires: 7 
-    });
-
       const data = await response.json();
       if (data?.length > 0) {
-        const match = data.find((item) => {
-          const address = item.address;
-          return (
-            (address.city?.toLowerCase() === novoEndereco.city.toLowerCase() ||
-              address.town?.toLowerCase() === novoEndereco.city.toLowerCase() ||
-              address.municipality?.toLowerCase() === novoEndereco.city.toLowerCase()) &&
-            address.state?.toLowerCase().includes(novoEndereco.state.toLowerCase())
-          );
-        }) || data[0];
+        const match =
+          data.find((item) => {
+            const address = item.address;
+            return (
+              (address.city?.toLowerCase() === novoEndereco.city.toLowerCase() ||
+                address.town?.toLowerCase() === novoEndereco.city.toLowerCase() ||
+                address.municipality?.toLowerCase() === novoEndereco.city.toLowerCase()) &&
+              address.state?.toLowerCase().includes(novoEndereco.state.toLowerCase())
+            );
+          }) || data[0];
         const { lat, lon } = match;
         setNovoEndereco((prev) => ({
           ...prev,
@@ -78,20 +66,6 @@ const PaginaLoginComponent = () => {
       return () => clearTimeout(timer);
     }
   }, [novoEndereco.city, novoEndereco.state, mostrarFormulario]);
-  
-  
-  useEffect(() => {
-   const validationHash = generateValidationHash();
-   Cookies.set("validationHash", validationHash, {
-     path: "/",
-  });
-  console.log("→ validationHash salvo no cookie:", Cookies.get("validationHash"));
-   setNovoEndereco((prev) => ({
-     ...prev,
-     validation_hash: validationHash,
-   }));
- }, []);
-
 
   const adicionarEndereco = async () => {
   if (
@@ -103,20 +77,19 @@ const PaginaLoginComponent = () => {
     try {
       setLoading(true);
 
-      const payload = {
-        user_name: Cookies.get("userName"),
-        name: novoEndereco.name,
-        state: novoEndereco.state,
-        city: novoEndereco.city,
-        validation_hash: novoEndereco.validation_hash,
-      };
-
       const response = await fetch("http://56.125.35.215:8000/user/create-city", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          user_name: novoEndereco.user_name,
+          name: novoEndereco.name,
+          state: novoEndereco.state,
+          city: novoEndereco.city,
+          coordenadas: novoEndereco.coordenadas,
+          validation_hash: Cookies.get("validation_hash"),
+        }),
       });
 
       if (!response.ok) {
@@ -127,24 +100,23 @@ const PaginaLoginComponent = () => {
 
       const novaCidade = {
         ...novoEndereco,
-        validation_hash: payload.validation_hash,
-        user_name: payload.user_name,
       };
 
       setCitys((prevCitys) => {
         const cidadesAtualizadas = [...prevCitys, novaCidade];
-        const chaveCidadesUsuario = `cidades_${payload.user_name}_${payload.validation_hash}`;
+        const chaveCidadesUsuario = `cidades_${novoEndereco.user_name}`;
         localStorage.setItem(chaveCidadesUsuario, JSON.stringify(cidadesAtualizadas));
         return cidadesAtualizadas;
       });
+
       setNovoEndereco({
+        user_name: novoEndereco.user_name,
         name: "",
         state: "",
         city: "",
         coordenadas: null,
-        validation_hash: payload.validation_hash,
-        user_name: payload.user_name,
       });
+
       setMostrarFormulario(false);
     } catch (error) {
       console.error("Erro ao adicionar cidade:", error);
@@ -156,6 +128,17 @@ const PaginaLoginComponent = () => {
     alert("Preencha todos os campos e aguarde a localização ser buscada.");
   }
 };
+  const handleAccountOption = (option) => {
+    alert(`Funcionalidade '${option}' ainda não implementada.`);
+  };
+
+  const handleLogoutClick = () => {
+    logout();
+    Cookies.remove("userName");
+    navigate("/login");
+  };
+
+
 
 
   return (
@@ -180,7 +163,7 @@ const PaginaLoginComponent = () => {
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-100 divide-y divide-gray-100">
               <div className="px-4 py-3">
                 <p className="text-sm font-medium text-gray-900">{Cookies.get("userName") || "Usuário"}</p>
-                <p className="text-xs text-gray-500 truncate">{Cookies.get("userEmail") || ""}</p>
+                <p className="text-xs text-gray-500 truncate">{Cookies.get("validation_hash") || "Hash de validacao "}</p>
               </div>
               <div className="py-1">
                 <button

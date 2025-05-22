@@ -10,38 +10,45 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    const userName = Cookies.get("userName");
-    const password = Cookies.get("userPassword"); 
-
-    if (userName && password) {
-      setAuthState({
-        usuarioLogado: true,
-        userData: {
-          user_name: userName,
-          password: password,
-        },
-      });
-    }
+    const checkAuth = () => {
+      const userName = Cookies.get("userName");
+      if (userName) {
+        setAuthState({
+          usuarioLogado: true,
+          userData: { user_name: userName },
+        });
+      }
+    };
+    checkAuth();
   }, []);
 
-  const login = ({ user_name, password }) => {
-    Cookies.set("userName", user_name, { expires: 1, path: "/" });
-    Cookies.set("userPassword", password, { expires: 1, path: "/" });
+ const login = async ({ user_name, validation_hash }) => {
+  Cookies.set("userName", user_name, { 
+    expires: 1, 
+    path: "/", 
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
 
-    setAuthState({
-      usuarioLogado: true,
-      userData: {
-        user_name,
-        password,
-      },
-    });
-  };
+  Cookies.set("validation_hash", validation_hash, { 
+    expires: 1, 
+    path: "/", 
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+
+  setAuthState({
+    usuarioLogado: true,
+    userData: { user_name, validation_hash },
+  });
+};
 
   const logout = () => {
     Cookies.remove("userName", { path: "/" });
-    Cookies.remove("userPassword", { path: "/" });
-    sessionStorage.clear();
-    setAuthState({ usuarioLogado: false, userData: null });
+    setAuthState({
+      usuarioLogado: false,
+      userData: null,
+    });
   };
 
   return (
