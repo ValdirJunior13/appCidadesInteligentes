@@ -1,177 +1,283 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+// Removi imports do Leaflet e MapContainer para focar na lógica,
+// mas você os manterá se for usar o mapa.
+// import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+// import "leaflet/dist/leaflet.css";
+// import L from "leaflet";
 import { useAuth } from '../context/AuthContext';
 import Cookies from "js-cookie";
-import Sidebar from "./Sidebar";
+// import Sidebar from "./Sidebar"; // Mantenha se estiver usando
 
-// Configuração do ícone do marcador do Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-});
-
-const customIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
-});
-
-const MapViewControl = ({ center, zoom }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, zoom);
-    }
-  }, [center, zoom, map]);
-  return null;
-};
+// Se você não estiver usando o mapa nesta parte específica do código, pode comentar
+// as configurações do ícone do Leaflet e o MapViewControl.
 
 const GerenciarCidadesComponent = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [cargoUsuario, setCargoUsuario] = useState(null);
-  const cityId = location.state?.cityId || sessionStorage.getItem('currentCityId');
-  const { usuarioLogado, logout } = useAuth();
+  const { usuarioLogado, logout, loadingAuth } = useAuth();
   
-  // Estado inicial com valores padrão para pontos
-  const [citySelecionada, setCitySelecionada] = useState(() => {
-    const defaultCity = {
-      name: '',
-      city: '',
-      state: '',
-      coordenadas: [0, 0],
-      pontos: {
-        iluminacao: [],
-        irrigacao: [],
-        drenagem: [],
-        lixo: []
-      }
-    };
-    
-    return location.state?.city 
-      ? { 
-          ...defaultCity,
-          ...location.state.city,
-          id: location.state.city.id || sessionStorage.getItem('city_id') || '',
-          pontos: {
-            ...defaultCity.pontos,
-            ...(location.state.city.pontos || {})
-          }
-        }
-      : defaultCity;
-  });
+  const cityIdFromRouteOrSession = location.state?.city?.id || location.state?.cityId || sessionStorage.getItem('currentCityId');
 
+  const [citySelecionada, setCitySelecionada] = useState(null); // Começa como null até carregar
+  const [cargoUsuario, setCargoUsuario] = useState(null);
+  const [userRole, setUserRole] = useState(null); // Pode ser o mesmo que cargoUsuario
+  const [loading, setLoading] = useState(true); // Começa carregando
+  
+  // Seus outros estados (categoriaSelecionada, pontosFiltrados, etc. são mantidos)
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
   const [pontosFiltrados, setPontosFiltrados] = useState([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const mapRef = useRef(null);
-
+  const mapRef = useRef(null); // Para o mapa
   const [tempFiltrosMapa, setTempFiltrosMapa] = useState({
-    iluminacao: true, 
-    irrigacao: true, 
-    drenagem: true, 
-    lixo: true
-  }); 
-
+    iluminacao: true, irrigacao: true, drenagem: true, lixo: true
+  });
   const [filtrosMapa, setFiltrosMapa] = useState({ ...tempFiltrosMapa });
 
-  const verificarCargo = async () => {
+
+  const buscarDetalhesCidade = async (idDaCidade) => {
+    if (!idDaCidade) {
+      console.error("buscarDetalhesCidade: ID da cidade é nulo ou indefinido.");
+      return null;
+    }
+
+    // setLoading(true); // O loading já é controlado pelo useEffect que chama esta função
+    const userNameActual = Cookies.get("userName");
+    const validationHashActual = Cookies.get("validation_hash");
+
+    console.log("--- Iniciando buscarDetalhesCidade ---");
+    console.log("ID da Cidade para buscar:", idDaCidade);
+    console.log("Cookie 'userName':", userNameActual);
+    console.log("Cookie 'validation_hash' (para validation_token):", validationHashActual);
+
+    if (!userNameActual || !validationHashActual) {
+      alert("Erro: Credenciais de usuário não encontradas. Faça login novamente.");
+      return null;
+    }
+
+    const fixedPathWithPlaceholders = `http://56.125.35.215:8000/city/get-data/{city_id}/{owner_or_manager_user_name}/{validation_token}`;
+    const apiUrlObject = new URL(fixedPathWithPlaceholders);
+    apiUrlObject.searchParams.append('city_id', idDaCidade.toString());
+    apiUrlObject.searchParams.append('user_name', userNameActual);
+    apiUrlObject.searchParams.append('validation_token', validationHashActual);
+    const apiUrlString = apiUrlObject.toString();
+
+    console.log("URL da API (buscarDetalhesCidade):", apiUrlString);
+
+    try {
+      const response = await fetch(apiUrlString, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+      });
+
+      console.log("Status API (buscarDetalhesCidade):", response.status, response.statusText);
+
+      if (!response.ok) {
+        let errorDetailMessage = `Erro HTTP ${response.status} (${response.statusText})`;
+        try {
+          const errorData = await response.json();
+          errorDetailMessage = errorData.detail || errorData.message || JSON.stringify(errorData);
+        } catch (e) {
+          try {
+            const textError = await response.text();
+            if (textError) errorDetailMessage += ` - ${textError}`;
+          } catch (textE) { /* ignora */ }
+        }
+        console.error("Erro API (buscarDetalhesCidade):", errorDetailMessage);
+        throw new Error(errorDetailMessage);
+      }
+
+      const dadosRecebidos = await response.json();
+      console.log("Dados brutos API (buscarDetalhesCidade):", JSON.stringify(dadosRecebidos, null, 2));
+
+      // CORREÇÃO DA EXTRAÇÃO: Espera-se {"cidade": { id: ..., name: ..., estado: ..., cidade: ... }}
+      const detalhesDaCidadeExtraidos = dadosRecebidos?.cidade; 
+
+      if (detalhesDaCidadeExtraidos && typeof detalhesDaCidadeExtraidos.id !== 'undefined') {
+        console.log("Detalhes da cidade extraídos com sucesso:", detalhesDaCidadeExtraidos);
+
+        const idParaArmazenar = detalhesDaCidadeExtraidos.id.toString();
+        const cargoParaArmazenar = detalhesDaCidadeExtraidos.cargo || null;
+
+        // Armazenar na sessionStorage com nomes claros
+        sessionStorage.setItem('currentCityId', idParaArmazenar);
+        console.log(`ID da cidade (${idParaArmazenar}) armazenado na sessionStorage como 'currentCityId'.`);
+        
+        if (cargoParaArmazenar) {
+          sessionStorage.setItem('currentCityCargo', cargoParaArmazenar);
+          console.log(`Cargo (${cargoParaArmazenar}) armazenado na sessionStorage como 'currentCityCargo'.`);
+        } else {
+          sessionStorage.removeItem('currentCityCargo');
+          console.log("Nenhum cargo encontrado nos detalhes da cidade para armazenar.");
+        }
+        
+        // Mapear campos do backend para o formato esperado pelo estado 'citySelecionada'
+        const cidadeMapeada = {
+          id: detalhesDaCidadeExtraidos.id,
+          name: detalhesDaCidadeExtraidos.name,     // Backend 'name' -> Frontend 'name'
+          city: detalhesDaCidadeExtraidos.cidade,  // Backend 'cidade' -> Frontend 'city'
+          state: detalhesDaCidadeExtraidos.estado, // Backend 'estado' -> Frontend 'state'
+          cargo: detalhesDaCidadeExtraidos.cargo,  // Se 'cargo' existir
+          coordenadas: location.state?.city?.coordenadas || [0,0], // Mantém coordenadas do estado anterior ou padrão
+          pontos: location.state?.city?.pontos || { iluminacao: [], irrigacao: [], drenagem: [], lixo: [] } // Mantém pontos do estado anterior ou padrão
+        };
+        return cidadeMapeada; 
+      } else {
+        console.warn("Resposta da API não continha 'cidade.id' válido. Resposta:", dadosRecebidos);
+        sessionStorage.removeItem('currentCityId');
+        sessionStorage.removeItem('currentCityCargo');
+        return null;
+      }
+    } catch (error) {
+      console.error("ERRO em buscarDetalhesCidade:", error.message, error);
+      alert(`Erro ao buscar detalhes da cidade: ${error.message}`);
+      sessionStorage.removeItem('currentCityId');
+      sessionStorage.removeItem('currentCityCargo');
+      return null;
+    } 
+    // finally {
+    //   setLoading(false); // O loading é controlado pelo useEffect que chama esta função
+    // }
+  };
+
+  // Função para verificar cargo (você já a tinha, pode ser chamada se necessário)
+  const verificarCargo = async (currentCityId) => {
+    if (!currentCityId) {
+        console.warn("verificarCargo: currentCityId não disponível para verificar cargo.");
+        setCargoUsuario(null); // Limpa o cargo se não houver ID
+        setUserRole(null);
+        return;
+    }
+    const userName = Cookies.get("userName");
+    const validationToken = Cookies.get("validation_hash");
+
+    if (!userName || !validationToken) {
+        console.warn("verificarCargo: Credenciais não encontradas para verificar cargo.");
+        setCargoUsuario(null);
+        setUserRole(null);
+        return;
+    }
+    
+    console.log("Verificando cargo para cityId:", currentCityId, "User:", userName);
     try {
       const response = await fetch(
-        `http://56.125.35.215:8000/user/check-ownership?city_id=${cityId}&user_name=${Cookies.get("userName")}&validation_token=${Cookies.get("validation_hash")}`
+        `http://56.125.35.215:8000/user/check-ownership?city_id=${currentCityId}&user_name=${userName}&validation_token=${validationToken}`
       );
-      
+      if (!response.ok) {
+          const errorData = await response.json().catch(() => ({detail: `HTTP error ${response.status}`}));
+          throw new Error(errorData.detail || `Erro ao verificar cargo: ${response.statusText}`);
+      }
       const data = await response.json();
+      console.log("Cargo retornado por verificarCargo:", data.cargo);
       setCargoUsuario(data.cargo); 
+      setUserRole(data.cargo);
     } catch (error) {
       console.error("Erro ao verificar cargo:", error);
-      navigate("/gerenciamentocidades");
+      setCargoUsuario(null);
+      setUserRole(null);
+      // alert(`Não foi possível verificar seu cargo na cidade: ${error.message}`); // Pode ser muito intrusivo
     }
   };
 
 
   useEffect(() => {
-    verificarCargo();
-  }, []);
-  useEffect(() => {
-    if (!usuarioLogado) {
+    if (loadingAuth) { // Se autenticação ainda está carregando, não faz nada
+      return;
+    }
+    if (!usuarioLogado) { // Se não estiver logado (após auth carregar)
       navigate("/login");
+      return;
     }
-    if (!citySelecionada || !citySelecionada.name) {
-      navigate("/");
-    }
-  }, [usuarioLogado, citySelecionada, navigate]);
 
+    // Se logado, tenta obter o cityId
+    const currentCityId = cityIdFromRouteOrSession; // Usando a variável definida no topo
+    console.log("useEffect principal - currentCityId:", currentCityId, "Usuário Logado:", usuarioLogado);
+
+    if (currentCityId) {
+      setLoading(true);
+      (async () => {
+        const detalhesDaCidade = await buscarDetalhesCidade(currentCityId);
+        if (detalhesDaCidade) {
+          setCitySelecionada(prev => ({
+            ...(prev || {}), // Mantém dados anteriores se existirem (como 'pontos')
+            ...detalhesDaCidade, // Sobrescreve com os novos detalhes mapeados
+            // Garante que 'pontos' e 'coordenadas' tenham uma estrutura válida se não vierem da API
+            pontos: detalhesDaCidade.pontos || prev?.pontos || { iluminacao: [], irrigacao: [], drenagem: [], lixo: [] },
+            coordenadas: detalhesDaCidade.coordenadas || prev?.coordenadas || [0,0]
+          }));
+          // O cargo já deve ter sido setado dentro de buscarDetalhesCidade ou será setado por verificarCargo
+          if (detalhesDaCidade.cargo) {
+            setCargoUsuario(detalhesDaCidade.cargo);
+            setUserRole(detalhesDaCidade.cargo);
+          } else {
+            // Se a API de detalhes não retorna o cargo, ou se você quer uma verificação separada/adicional:
+            console.log("Cargo não veio em buscarDetalhesCidade, chamando verificarCargo.");
+            await verificarCargo(currentCityId);
+          }
+        } else {
+          console.error("useEffect: Falha ao obter detalhes da cidade. ID da cidade pode ser inválido ou API falhou.");
+          alert("Não foi possível carregar os dados da cidade selecionada.");
+          // Considere limpar citySelecionada ou navegar para uma página de erro/seleção
+           setCitySelecionada(null); // Limpa se não conseguir carregar
+           navigate("/"); // Exemplo: volta para a home se não conseguir carregar a cidade
+        }
+        setLoading(false);
+      })();
+    } else if (!loadingAuth && usuarioLogado) { // Só navega se auth carregou, está logado mas não tem cityId
+      console.warn("Usuário logado, mas sem cityId definido. Navegando para a página inicial.");
+      navigate("/"); 
+    }
+  }, [cityIdFromRouteOrSession, usuarioLogado, loadingAuth, navigate]);
+
+
+  // Seu useEffect para pontosFiltrados (mantido)
   useEffect(() => {
     if (citySelecionada && categoriaSelecionada) {
       setPontosFiltrados(citySelecionada.pontos?.[categoriaSelecionada] || []);
+    } else {
+      setPontosFiltrados([]);
     }
   }, [categoriaSelecionada, citySelecionada]);
 
+  // Seus outros manipuladores (handleLogoutClick, etc.) permanecem aqui...
   const handleLogoutClick = () => {
     logout();
+    sessionStorage.removeItem('currentCityId');
+    sessionStorage.removeItem('currentCityCargo');
     navigate("/login");
   };
 
-  const handleToggleSidebar = () => {
-    setShowSidebar(!showSidebar);
-  };
+  const handleToggleSidebar = () => setShowSidebar(!showSidebar);
 
   const handleTempFiltroChange = (categoria) => { 
-    setTempFiltrosMapa(prev => ({
-      ...prev, 
-      [categoria]: !prev[categoria] 
-    }));
+    setTempFiltrosMapa(prev => ({ ...prev, [categoria]: !prev[categoria] }));
   };
 
-  const verificarPermissoesCidade = async () => {
-  try {
-    const response = await fetch(
-      `http://56.125.35.215:8000/user/check-ownership?city_id=${citySelecionada.id}&user_name=${Cookies.get("userName")}&validation_token=${Cookies.get("validation_hash")}`
-    );
-    
-    if (!response.ok) throw new Error("Erro ao verificar permissões");
-    
-    const data = await response.json();
-    return data.cargo; // Retorna "dono", "gerente" ou outro cargo
-  } catch (error) {
-    console.error("Erro ao verificar permissões:", error);
-    return null;
-  }
-};
-const [userRole, setUserRole] = useState(null);
-
-useEffect(() => {
-  const checkPermissions = async () => {
-    if (citySelecionada.id) {
-      const role = await verificarPermissoesCidade();
-      setUserRole(role);
-    }
-  };
+  const confirmarFiltros = () => setFiltrosMapa({ ...tempFiltrosMapa });
   
-  checkPermissions();
-}, [citySelecionada.id]);
 
-  const confirmarFiltros = () => {
-    setFiltrosMapa({ ...tempFiltrosMapa });
-  };
+  // Lógica de renderização condicional antes do return JSX
+  if (loadingAuth || loading) { // Mostra carregando se auth ou dados da cidade estiverem carregando
+    return <div className="flex justify-center items-center min-h-screen">Carregando...</div>;
+  }
 
-  if (!usuarioLogado || !citySelecionada?.name) {
+  if (!usuarioLogado) {
+    // O useEffect já deve ter redirecionado, mas como uma defesa extra
     return null;
   }
 
   return (
+
+    
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <Sidebar 
         activeItem={categoriaSelecionada} 
         className={`${showSidebar ? "block" : "hidden md:block"}`}
       />
+
+      
       
       {/* Conteúdo Principal */}
       <div className="flex-1 flex flex-col overflow-hidden">

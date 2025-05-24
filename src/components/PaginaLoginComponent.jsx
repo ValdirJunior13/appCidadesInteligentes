@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Cookies from "js-cookie";
 import Quadrado from "../components/Quadrado";
-// Importando o contexto de autenticação
+
 
 const PaginaLoginComponent = () => {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ const PaginaLoginComponent = () => {
     }
   }, [novoEndereco.city, novoEndereco.state, mostrarFormulario]);
 
-  const adicionarEndereco = async () => {
+ const adicionarEndereco = async () => {
   if (
     novoEndereco.name &&
     novoEndereco.state &&
@@ -94,9 +94,12 @@ const PaginaLoginComponent = () => {
       }
 
       const data = await response.json();
+      localStorage.setItem(`ultimaCidadeCriada_${novoEndereco.user_name}`, data.id);
+      console.log("ID da cidade armazenado:", data.id);
 
       const novaCidade = {
         ...novoEndereco,
+        id: data.id 
       };
 
       setCitys((prevCitys) => {
@@ -135,32 +138,50 @@ const PaginaLoginComponent = () => {
     navigate("/login");
   };
 
-
-
 const buscarCidades = async () => {
   try {
     setLoading(true);
     const userName = Cookies.get("userName");
     const validationHash = Cookies.get("validation_hash");
 
-    // Primeiro tente do cache
+    const idCidadeArmazenado = localStorage.getItem(`ultimaCidadeCriada_${userName}`);
+    if (idCidadeArmazenado) {
+      console.log("ID da última cidade criada:", idCidadeArmazenado);
+    }
+
     const cached = localStorage.getItem(`cidades_${userName}`);
     if (cached) {
       setCitys(JSON.parse(cached));
     }
 
-    const response = await fetch(`http://56.125.35.215:8000/user/get-cities?user_name=${userName}&validation_hash=${validationHash}`);
-    
+    const response = await fetch(`http://56.125.35.215:8000/user/get-cities/<user_name>/<validation_token>?user_name=${userName}&vld_hashing=${validationHash}`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
     if (!response.ok) {
       throw new Error("Erro ao buscar cidades");
     }
 
     const data = await response.json();
-    setCitys(data);
+
+    const arrayDeCidades = Object.values(data);
+    
+
+    if (arrayDeCidades && Array.isArray(data)) {
+      arrayDeCidades.forEach(cidade => {
+        if (cidade.id) {
+          sessionStorage.setItem(`cidade_${cidade.id}`, JSON.stringify(cidade));
+        }
+      });
+    }
+
+    setCitys(arrayDeCidades);
     localStorage.setItem(`cidades_${userName}`, JSON.stringify(data));
   } catch (error) {
     console.error("Erro ao buscar:", error);
-
     if (!citys.length) {
       alert("Erro ao buscar cidades. Usando dados locais.");
     }
@@ -168,6 +189,7 @@ const buscarCidades = async () => {
     setLoading(false);
   }
 };
+
 const handleCityClick = (city) => {
   sessionStorage.setItem('currentCityId', city.id);
   navigate("/gerenciamentocidades", { state: { city } });
@@ -282,17 +304,17 @@ useEffect(() => {
         {/* Grid de Cidades */}
         {citys.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {citys.map((local, index) => (
+            {citys.map((local) => (
               <div
-                key={index}
+                key={local.id}
                 onClick={() =>
-               handleCityClick(local)}
+              handleCityClick(local)}
                                 
                 className="cursor-pointer transition transform hover:scale-[1.02] active:scale-95"
               >
                 <Quadrado
                   imagem="../src/assets/images/city-buildings-svgrepo-com.svg"
-                  titulo={local.name}
+                  titulo={local.city_name}
                   descricao={`${local.city}, ${local.state}`}
                 />
               </div>

@@ -23,7 +23,7 @@ const LoginComponent = () => {
 
   const handleSubmit = async (e) => {
   e.preventDefault();
-  setError(""); // limpa erro anterior
+  setError(""); 
 
   try {
     const response = await fetch("http://56.125.35.215:8000/login/", {
@@ -42,8 +42,8 @@ const LoginComponent = () => {
     }
 
     const data = await response.json();
-
-   
+    Cookies.set("userName", data.user_name, { expires: 1 }); 
+    Cookies.set("validation_hash", data.hashing, { expires: 1 });
 
     await login({
       user_name: data.user_name,
