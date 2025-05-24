@@ -16,6 +16,15 @@ const ConfiguracaoCidade = () => {
     { nome: '', cargo: '', id: '' }
   ]);
 
+  const [addInvitation, setAddInvitation] = useState({
+    user_name: Cookies.get("userName"),
+    validation_hash: Cookies.get("validation_hash"),
+    city_id: cidadeAtual?.id || 0,
+    decision: true,
+    role: ""
+    });
+
+
   const [addManager, setAddManager] = useState({
     owner_user_name: Cookies.get("userName"),
     city_name: cidadeAtual?.name || "",
@@ -32,151 +41,178 @@ const ConfiguracaoCidade = () => {
     city_id: cidadeAtual?.id || 0
   });
 
-  const atualizarChave = () => {
-    const novaChave = Math.random().toString(36).substr(2, 10).toUpperCase();
-    setChave(novaChave);
-  };
-
-  const removerGerente = () => {
-    if (gerentes.length > 1) {
-      setGerentes(prev => prev.slice(0, -1));
-    }
-  };
-
-  const excluirCidade = () => {
-    if (!window.confirm('Tem certeza que deseja excluir esta cidade?')) return;
+ const addGerente = async () => {
+  if (addManager.owner_user_name && addManager.validation_hash && addManager.city_name && addManager.manager_user_name && addManager.system_type) {
+    setLoading(true);
     try {
-      const cidadesSalvas = JSON.parse(localStorage.getItem("cidades")) || [];
-      const index = cidadesSalvas.findIndex(c =>
-        c.name === cidadeAtual.name &&
-        c.city === cidadeAtual.city &&
-        c.state === cidadeAtual.state
-      );
-      if (index === -1) throw new Error("Cidade não encontrada");
-      const novas = [
-        ...cidadesSalvas.slice(0, index),
-        ...cidadesSalvas.slice(index + 1)
-      ];
-      localStorage.setItem("cidades", JSON.stringify(novas));
-      alert('Cidade excluída com sucesso!');
-      navigate("/paginalogin", { replace: true });
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao excluir, cidade não encontrada.");
-    }
-  };
-
-  const sendManagerInvite = async () => {
-    try {
-      const nome = addManager.manager_user_name.trim();
-      if (!nome || !addManager.system_type) {
-        alert("Informe usuário e função antes de enviar.");
-        return;
-      }
-      const resp1 = await fetch("/city/add-manager", {
+      const response = await fetch("http://56.125.35.215:8000/city/add-manager", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(addManager),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          owner_user_name: addManager.owner_user_name,
+          city_name: addManager.city_name,
+          manager_user_name: addManager.manager_user_name,
+          system_type: addManager.system_type,
+          validation_hash: addManager.validation_hash
+        }),
       });
-      if (!resp1.ok) throw new Error("Falha ao enviar convite");
-      const { invitation_id } = await resp1.json();
-  
-      const answerPayload = {
-        ...submitInvitation,
-        user_name: nome,
-        city_id: cidadeAtual.id,
-      };
-      setSubmitInvitation(answerPayload);
-      const resp2 = await fetch(
-        "/user/manager/submit-invitation-answer",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(answerPayload), 
-        }
-      );
-      if (!resp2.ok) throw new Error("Falha ao confirmar convite");
 
+      if (!response.ok) {
+        let serverErrorMessage = "Erro ao enviar convite no servidor";
+        try {
+          const errorData = await response.json();
+          serverErrorMessage = errorData.message || errorData.detail || JSON.stringify(errorData);
+        } catch (e) {
+          serverErrorMessage = `Erro ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(serverErrorMessage);
+      }
+
+      const data = await response.json();
       setGerentes(prev => [
         ...prev,
-        { nome, cargo: `Gerente confirmado (${addManager.system_type})`, id: invitation_id }
+        {
+          nome: addManager.manager_user_name,
+          cargo: `Gerente de ${addManager.system_type}`,
+          id: data.invitation_id || Date.now().toString()
+        }
       ]);
-      setAddManager(prev => ({ ...prev, manager_user_name: "" }));
-      alert(`Convite enviado e confirmado para ${nome}`);
-    } catch (err) {
-      console.error(err);
-      alert(`Erro: ${err.message}`);
-    }
-  };
 
-  const testAdicionarGerente = async () => {
+      setAddManager(prev => ({
+        ...prev,
+        manager_user_name: ""
+      }));
+
+      alert(`Convite enviado com sucesso para ${addManager.manager_user_name} como Gerente de ${addManager.system_type}`);
+
+      return data;
+    } catch (error) {
+      console.error("Erro ao adicionar gerente:", error);
+      alert(`Erro ao adicionar gerente: ${error.message}`);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  } else {
+    alert("Por favor, preencha todos os campos obrigatórios");
+    throw new Error("Campos obrigatórios não preenchidos");
+  }
+};
+
+
+
+  const submitInvitationAnswer = async () => {
+  if (addInvitation.user_name && addInvitation.validation_hash && addInvitation.city_id && addInvitation.decision && addInvitation.role) {
+    setLoading(true);
     try {
-      console.log("Iniciando teste de adição de gerente...");
-      const testManager = {
-        owner_user_name: "dono_cidade",
-        city_name: "Cidade Teste",
-        manager_user_name: "novo_gerente",
-        system_type: "irrigation",
-        validation_hash: "hash_teste_123"
-      };
+      const response = await fetch("http://56.125.35.215:8000/user/manager/submit-invitation-answer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_name: addInvitation.user_name,
+          validation_hash: addInvitation.validation_hash,
+          city_id: addInvitation.city_id,
+          decision: addInvitation.decision,
+          role: addInvitation.role
+        }),
+      });
+
+      if (!response.ok) {
+        let serverErrorMessage = "Erro ao enviar resposta de convite no servidor";
+        try {
+          const errorData = await response.json();
+          serverErrorMessage = errorData.message || errorData.detail || JSON.stringify(errorData);
+        } catch (e) {
+          serverErrorMessage = `Erro ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(serverErrorMessage);
+      }
+
+      const data = await response.json();
       
-      console.log("Dados de teste:", testManager);
-      
-      console.log("Simulando chamada à API /city/add-manager...");
-      const mockInviteResponse = {
-        invitation_id: "inv123",
-        status: "success"
-      };
-      
-      console.log("Simulando resposta do convite...");
-      const mockAnswer = {
-        user_name: "novo_gerente",
-        validation_hash: "hash_teste_123",
-        decision: true,
-        role: "manager",
-        city_id: 1
-      };
-      
-      const mockAnswerResponse = {
-        status: "accepted",
-        manager_id: "mgr123"
-      };
-      
-      console.log("Verificando atualização de estado...");
-      setAddManager(prev => ({ ...prev, manager_user_name: "" }));
+      // Atualiza a lista de gerentes após a resposta bem-sucedida
       setGerentes(prev => [
         ...prev,
         { 
-          nome: "novo_gerente", 
-          cargo: `Gerente confirmado (irrigation)`, 
-          id: "inv123" 
+          nome: addInvitation.user_name, 
+          cargo: `Gerente (${addInvitation.role})`, 
+          id: data.invitation_id || "novo-id" 
         }
       ]);
       
-      console.log("✅ Teste concluído com sucesso!");
-      console.log("Estado esperado após teste:");
-      console.log("- Campo manager_user_name deve estar vazio");
-      console.log("- Novo gerente deve aparecer na lista");
+      // Limpa o formulário ou mostra mensagem de sucesso
+      alert(`Convite aceito com sucesso para ${addInvitation.user_name} como ${addInvitation.role}`);
       
-      alert("Teste de adição de gerente concluído!\nVerifique o console para detalhes.");
-      
-      return {
-        success: true,
-        inviteData: testManager,
-        inviteResponse: mockInviteResponse,
-        answerData: mockAnswer,
-        answerResponse: mockAnswerResponse
-      };
-      
+      return data;
     } catch (error) {
-      console.error("❌ Erro no teste:", error);
-      alert("Falha no teste: " + error.message);
-      return {
-        success: false,
-        error: error.message
-      };
+      console.error("Erro ao enviar resposta de convite:", error);
+      alert(`Erro ao enviar resposta de convite: ${error.message}`);
+      throw error;
+    } finally {
+      setLoading(false);
     }
-  };
+  } else {
+    alert("Por favor, preencha todos os campos necessários");
+    throw new Error("Campos obrigatórios não preenchidos");
+  }
+};
+  const [loading, setLoading] = useState(false);
+
+const fetchCityManagers = async () => {
+  try {
+    setLoading(true);
+
+    const cityData = JSON.parse(localStorage.getItem('cidadeAtual')); // Chave específica
+    const cityId = cityData?.id;
+
+    if (!cityId) {
+      throw new Error("ID da cidade não encontrado no localStorage");
+    }
+
+    const username = Cookies.get("user_name");
+    const validationToken = Cookies.get("validation_hash");
+
+    if (!username || !validationToken) {
+      throw new Error("Usuário não autenticado");
+    }
+
+
+    const url = `http://56.125.35.215:8000/city/get-managers/<city_id>/<username>/<validation_token>?city_id=${cityId}&username=${username}&validation_token=${validationToken}`;
+
+    // 4. Fazer a requisição
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || "Erro ao buscar gerentes");
+    }
+
+    // 5. Atualizar estado dos gerentes
+    const managers = await response.json();
+    setGerentes(
+      managers.map((manager) => ({
+        nome: manager.user_name,
+        cargo: manager.system_type,
+        id: manager.id, // Usando o ID correto da resposta
+      }))
+    );
+
+  } catch (error) {
+    console.error("Erro ao buscar gerentes:", error);
+    alert(`Erro: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   return (
     <div className="flex h-screen bg-gray-300">
@@ -306,5 +342,6 @@ const ConfiguracaoCidade = () => {
     </div>
   );
 };
+
 
 export default ConfiguracaoCidade;

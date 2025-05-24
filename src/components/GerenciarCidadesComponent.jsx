@@ -1,456 +1,507 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-// Removi imports do Leaflet e MapContainer para focar na lógica,
-// mas você os manterá se for usar o mapa.
-// import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-// import "leaflet/dist/leaflet.css";
-// import L from "leaflet";
-import { useAuth } from '../context/AuthContext';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { useAuth } from '../context/AuthContext'; // Ajuste o caminho
 import Cookies from "js-cookie";
-// import Sidebar from "./Sidebar"; // Mantenha se estiver usando
+import Sidebar from "./Sidebar"; // Ajuste o caminho
 
-// Se você não estiver usando o mapa nesta parte específica do código, pode comentar
-// as configurações do ícone do Leaflet e o MapViewControl.
+// Correção para o ícone padrão do Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+});
+
+const customIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+});
+
+const MapViewControl = ({ center, zoom }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center && center.length === 2 && !isNaN(center[0]) && !isNaN(center[1])) {
+      map.flyTo(center, zoom);
+    }
+  }, [center, zoom, map]);
+  return null;
+};
 
 const GerenciarCidadesComponent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { usuarioLogado, logout, loadingAuth } = useAuth();
-  
-  const cityIdFromRouteOrSession = location.state?.city?.id || location.state?.cityId || sessionStorage.getItem('currentCityId');
 
-  const [citySelecionada, setCitySelecionada] = useState(null); // Começa como null até carregar
-  const [cargoUsuario, setCargoUsuario] = useState(null);
-  const [userRole, setUserRole] = useState(null); // Pode ser o mesmo que cargoUsuario
-  const [loading, setLoading] = useState(true); // Começa carregando
+  const [cityDetails, setCityDetails] = useState(null);
+  const [userCargo, setUserCargo] = useState(null);
+  const [cityDevices, setCityDevices] = useState({});
   
-  // Seus outros estados (categoriaSelecionada, pontosFiltrados, etc. são mantidos)
+  // Novo estado para controlar o carregamento inicial dos dados da página
+  const [isLoadingPageData, setIsLoadingPageData] = useState(true);
+
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
   const [pontosFiltrados, setPontosFiltrados] = useState([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const mapRef = useRef(null); // Para o mapa
+  // 'loading' pode ser usado para outras operações específicas da página, se necessário.
+  // const [loading, setLoading] = useState(false); 
+  const mapRef = useRef(null);
+
   const [tempFiltrosMapa, setTempFiltrosMapa] = useState({
     iluminacao: true, irrigacao: true, drenagem: true, lixo: true
-  });
+  }); 
   const [filtrosMapa, setFiltrosMapa] = useState({ ...tempFiltrosMapa });
 
-
-  const buscarDetalhesCidade = async (idDaCidade) => {
-    if (!idDaCidade) {
-      console.error("buscarDetalhesCidade: ID da cidade é nulo ou indefinido.");
-      return null;
-    }
-
-    // setLoading(true); // O loading já é controlado pelo useEffect que chama esta função
-    const userNameActual = Cookies.get("userName");
-    const validationHashActual = Cookies.get("validation_hash");
-
-    console.log("--- Iniciando buscarDetalhesCidade ---");
-    console.log("ID da Cidade para buscar:", idDaCidade);
-    console.log("Cookie 'userName':", userNameActual);
-    console.log("Cookie 'validation_hash' (para validation_token):", validationHashActual);
-
-    if (!userNameActual || !validationHashActual) {
-      alert("Erro: Credenciais de usuário não encontradas. Faça login novamente.");
-      return null;
-    }
-
-    const fixedPathWithPlaceholders = `http://56.125.35.215:8000/city/get-data/{city_id}/{owner_or_manager_user_name}/{validation_token}`;
-    const apiUrlObject = new URL(fixedPathWithPlaceholders);
-    apiUrlObject.searchParams.append('city_id', idDaCidade.toString());
-    apiUrlObject.searchParams.append('user_name', userNameActual);
-    apiUrlObject.searchParams.append('validation_token', validationHashActual);
-    const apiUrlString = apiUrlObject.toString();
-
-    console.log("URL da API (buscarDetalhesCidade):", apiUrlString);
-
+  // Função para buscar dados da cidade se não vieram pelo location.state
+  const fetchCityDataById = async (cityId) => {
+    // setIsLoadingPageData(true); // Já é true ou será setado antes da chamada
     try {
-      const response = await fetch(apiUrlString, {
+      const currentUserName = Cookies.get("userName");
+      const validationHash = Cookies.get("validation_hash");
+
+      if (!currentUserName || !validationHash) {
+        alert("Sessão inválida ou dados de autenticação não encontrados. Faça login novamente.");
+        navigate("/login");
+        return;
+      }
+
+      const apiUrl = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${cityId}&user_name=${currentUserName}&validation_token=${validationHash}`;
+      const response = await fetch(apiUrl, {
         method: "GET",
         headers: { "Accept": "application/json" },
       });
 
-      console.log("Status API (buscarDetalhesCidade):", response.status, response.statusText);
-
       if (!response.ok) {
-        let errorDetailMessage = `Erro HTTP ${response.status} (${response.statusText})`;
+        let errorBody = await response.text();
         try {
-          const errorData = await response.json();
-          errorDetailMessage = errorData.detail || errorData.message || JSON.stringify(errorData);
+          const errorJson = JSON.parse(errorBody);
+          errorBody = errorJson.message || errorJson.detail || JSON.stringify(errorJson);
         } catch (e) {
-          try {
-            const textError = await response.text();
-            if (textError) errorDetailMessage += ` - ${textError}`;
-          } catch (textE) { /* ignora */ }
+          errorBody = `HTTP ${response.status}: ${response.statusText}. (Detalhes: ${errorBody})`;
         }
-        console.error("Erro API (buscarDetalhesCidade):", errorDetailMessage);
-        throw new Error(errorDetailMessage);
+        throw new Error(`Falha ao buscar dados da cidade: ${errorBody}`);
       }
 
-      const dadosRecebidos = await response.json();
-      console.log("Dados brutos API (buscarDetalhesCidade):", JSON.stringify(dadosRecebidos, null, 2));
-
-      // CORREÇÃO DA EXTRAÇÃO: Espera-se {"cidade": { id: ..., name: ..., estado: ..., cidade: ... }}
-      const detalhesDaCidadeExtraidos = dadosRecebidos?.cidade; 
-
-      if (detalhesDaCidadeExtraidos && typeof detalhesDaCidadeExtraidos.id !== 'undefined') {
-        console.log("Detalhes da cidade extraídos com sucesso:", detalhesDaCidadeExtraidos);
-
-        const idParaArmazenar = detalhesDaCidadeExtraidos.id.toString();
-        const cargoParaArmazenar = detalhesDaCidadeExtraidos.cargo || null;
-
-        // Armazenar na sessionStorage com nomes claros
-        sessionStorage.setItem('currentCityId', idParaArmazenar);
-        console.log(`ID da cidade (${idParaArmazenar}) armazenado na sessionStorage como 'currentCityId'.`);
-        
-        if (cargoParaArmazenar) {
-          sessionStorage.setItem('currentCityCargo', cargoParaArmazenar);
-          console.log(`Cargo (${cargoParaArmazenar}) armazenado na sessionStorage como 'currentCityCargo'.`);
-        } else {
-          sessionStorage.removeItem('currentCityCargo');
-          console.log("Nenhum cargo encontrado nos detalhes da cidade para armazenar.");
-        }
-        
-        // Mapear campos do backend para o formato esperado pelo estado 'citySelecionada'
-        const cidadeMapeada = {
-          id: detalhesDaCidadeExtraidos.id,
-          name: detalhesDaCidadeExtraidos.name,     // Backend 'name' -> Frontend 'name'
-          city: detalhesDaCidadeExtraidos.cidade,  // Backend 'cidade' -> Frontend 'city'
-          state: detalhesDaCidadeExtraidos.estado, // Backend 'estado' -> Frontend 'state'
-          cargo: detalhesDaCidadeExtraidos.cargo,  // Se 'cargo' existir
-          coordenadas: location.state?.city?.coordenadas || [0,0], // Mantém coordenadas do estado anterior ou padrão
-          pontos: location.state?.city?.pontos || { iluminacao: [], irrigacao: [], drenagem: [], lixo: [] } // Mantém pontos do estado anterior ou padrão
-        };
-        return cidadeMapeada; 
+      const data = await response.json(); // Espera-se {cidade, cargo, dispositivos}
+      
+      if (data && data.cidade) {
+        setCityDetails(data.cidade);
+        setUserCargo(data.cargo);
+        setCityDevices(data.dispositivos || {});
       } else {
-        console.warn("Resposta da API não continha 'cidade.id' válido. Resposta:", dadosRecebidos);
-        sessionStorage.removeItem('currentCityId');
-        sessionStorage.removeItem('currentCityCargo');
-        return null;
+        throw new Error("Formato de dados da cidade inválido recebido da API.");
       }
     } catch (error) {
-      console.error("ERRO em buscarDetalhesCidade:", error.message, error);
-      alert(`Erro ao buscar detalhes da cidade: ${error.message}`);
-      sessionStorage.removeItem('currentCityId');
-      sessionStorage.removeItem('currentCityCargo');
-      return null;
-    } 
-    // finally {
-    //   setLoading(false); // O loading é controlado pelo useEffect que chama esta função
-    // }
-  };
-
-  // Função para verificar cargo (você já a tinha, pode ser chamada se necessário)
-  const verificarCargo = async (currentCityId) => {
-    if (!currentCityId) {
-        console.warn("verificarCargo: currentCityId não disponível para verificar cargo.");
-        setCargoUsuario(null); // Limpa o cargo se não houver ID
-        setUserRole(null);
-        return;
-    }
-    const userName = Cookies.get("userName");
-    const validationToken = Cookies.get("validation_hash");
-
-    if (!userName || !validationToken) {
-        console.warn("verificarCargo: Credenciais não encontradas para verificar cargo.");
-        setCargoUsuario(null);
-        setUserRole(null);
-        return;
-    }
-    
-    console.log("Verificando cargo para cityId:", currentCityId, "User:", userName);
-    try {
-      const response = await fetch(
-        `http://56.125.35.215:8000/user/check-ownership?city_id=${currentCityId}&user_name=${userName}&validation_token=${validationToken}`
-      );
-      if (!response.ok) {
-          const errorData = await response.json().catch(() => ({detail: `HTTP error ${response.status}`}));
-          throw new Error(errorData.detail || `Erro ao verificar cargo: ${response.statusText}`);
-      }
-      const data = await response.json();
-      console.log("Cargo retornado por verificarCargo:", data.cargo);
-      setCargoUsuario(data.cargo); 
-      setUserRole(data.cargo);
-    } catch (error) {
-      console.error("Erro ao verificar cargo:", error);
-      setCargoUsuario(null);
-      setUserRole(null);
-      // alert(`Não foi possível verificar seu cargo na cidade: ${error.message}`); // Pode ser muito intrusivo
-    }
-  };
-
-
-  useEffect(() => {
-    if (loadingAuth) { // Se autenticação ainda está carregando, não faz nada
-      return;
-    }
-    if (!usuarioLogado) { // Se não estiver logado (após auth carregar)
-      navigate("/login");
-      return;
-    }
-
-    // Se logado, tenta obter o cityId
-    const currentCityId = cityIdFromRouteOrSession; // Usando a variável definida no topo
-    console.log("useEffect principal - currentCityId:", currentCityId, "Usuário Logado:", usuarioLogado);
-
-    if (currentCityId) {
-      setLoading(true);
-      (async () => {
-        const detalhesDaCidade = await buscarDetalhesCidade(currentCityId);
-        if (detalhesDaCidade) {
-          setCitySelecionada(prev => ({
-            ...(prev || {}), // Mantém dados anteriores se existirem (como 'pontos')
-            ...detalhesDaCidade, // Sobrescreve com os novos detalhes mapeados
-            // Garante que 'pontos' e 'coordenadas' tenham uma estrutura válida se não vierem da API
-            pontos: detalhesDaCidade.pontos || prev?.pontos || { iluminacao: [], irrigacao: [], drenagem: [], lixo: [] },
-            coordenadas: detalhesDaCidade.coordenadas || prev?.coordenadas || [0,0]
-          }));
-          // O cargo já deve ter sido setado dentro de buscarDetalhesCidade ou será setado por verificarCargo
-          if (detalhesDaCidade.cargo) {
-            setCargoUsuario(detalhesDaCidade.cargo);
-            setUserRole(detalhesDaCidade.cargo);
-          } else {
-            // Se a API de detalhes não retorna o cargo, ou se você quer uma verificação separada/adicional:
-            console.log("Cargo não veio em buscarDetalhesCidade, chamando verificarCargo.");
-            await verificarCargo(currentCityId);
-          }
-        } else {
-          console.error("useEffect: Falha ao obter detalhes da cidade. ID da cidade pode ser inválido ou API falhou.");
-          alert("Não foi possível carregar os dados da cidade selecionada.");
-          // Considere limpar citySelecionada ou navegar para uma página de erro/seleção
-           setCitySelecionada(null); // Limpa se não conseguir carregar
-           navigate("/"); // Exemplo: volta para a home se não conseguir carregar a cidade
-        }
-        setLoading(false);
-      })();
-    } else if (!loadingAuth && usuarioLogado) { // Só navega se auth carregou, está logado mas não tem cityId
-      console.warn("Usuário logado, mas sem cityId definido. Navegando para a página inicial.");
+      console.error("Erro em fetchCityDataById:", error);
+      alert(error.message);
       navigate("/"); 
+    } finally {
+      setIsLoadingPageData(false);
     }
-  }, [cityIdFromRouteOrSession, usuarioLogado, loadingAuth, navigate]);
+  };
 
 
-  // Seu useEffect para pontosFiltrados (mantido)
+  // Coloque esta função dentro do seu componente GerenciarCidadesComponent
+
+const buscarPontosFiltradosDaAPI = async () => {
+  // Garante que temos os detalhes da cidade (especialmente o ID) e os filtros
+  if (!cityDetails || !cityDetails.id) {
+    console.warn("buscarPontosFiltradosDaAPI: ID da cidade não disponível em cityDetails.");
+    // setPontosFiltrados([]); // Opcional: limpar os pontos se não puder buscar
+    return; // Não pode prosseguir sem o ID da cidade
+  }
+
+  // setLoading(true); // Se você tiver um estado de loading específico para esta operação
+  // Ou pode usar o 'isLoadingPageData' se fizer sentido no fluxo
+  setIsLoadingPageData(true); // Reutilizando o estado de loading existente
+
+  const currentCityId = cityDetails.id;
+  const currentUserName = Cookies.get("userName");
+  const currentValidationHash = Cookies.get("validation_hash"); // Valor para o query param 'validation_token'
+
+  console.log("--- Iniciando buscarPontosFiltradosDaAPI ---");
+  console.log("City ID (query):", currentCityId);
+  console.log("User Name (query):", currentUserName);
+  console.log("Validation Token (query):", currentValidationHash);
+  console.log("Filtros Mapa (para query 'list_filter'):", filtrosMapa);
+
+  if (!currentUserName || !currentValidationHash) {
+    alert("Sessão inválida ou dados de autenticação não encontrados. Faça login novamente.");
+    setIsLoadingPageData(false);
+    navigate("/login"); // Redireciona se não houver autenticação
+    return;
+  }
+
+  const literalPath = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>/<list-filter>?city_id=${cityDetails.id}&user_name=${Cookies.get("userName")}&validation_token=${Cookies.get("validation_hash")}&list_filter=${JSON.stringify(filtrosMapa)}`;
+  
+  const apiUrlObject = new URL(literalPath);
+  apiUrlObject.searchParams.append('city_id', String(currentCityId));
+  apiUrlObject.searchParams.append('user_name', currentUserName);
+  apiUrlObject.searchParams.append('validation_token', currentValidationHash);
+  apiUrlObject.searchParams.append('list_filter', JSON.stringify(filtrosMapa)); 
+
+  const apiUrlString = apiUrlObject.toString();
+  console.log("URL API (buscarPontosFiltradosDaAPI):", apiUrlString);
+
+  try {
+    const response = await fetch(apiUrlString, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+    });
+
+    console.log("Status API (buscarPontosFiltradosDaAPI):", response.status, response.statusText);
+
+    if (!response.ok) {
+      // Tratar erros de CORS ou outros erros de rede/servidor
+      let errorBody = `Erro HTTP ${response.status} (${response.statusText})`;
+      try { 
+        const errorJson = await response.json(); 
+        errorBody = errorJson.detail || errorJson.message || JSON.stringify(errorJson); 
+      } catch (e) { 
+        // Se o corpo do erro não for JSON, tenta ler como texto
+        try { errorBody = await response.text() || errorBody; } catch (textErr) {}
+      }
+      throw new Error(`Falha ao buscar pontos filtrados: ${errorBody}`);
+    }
+
+    const dadosFiltrados = await response.json();
+    console.log("Dados brutos dos pontos filtrados recebidos:", JSON.stringify(dadosFiltrados, null, 2));
+
+    if (Array.isArray(dadosFiltrados)) {
+      setPontosFiltrados(dadosFiltrados);
+      console.log("Estado 'pontosFiltrados' atualizado com dados da API:", dadosFiltrados);
+    } 
+    else {
+      console.warn("Formato inesperado para os pontos filtrados recebidos da API:", dadosFiltrados);
+      setPontosFiltrados([]); // Define como vazio se o formato for incorreto
+    }
+
+  } catch (error) {
+    console.error("Erro em buscarPontosFiltradosDaAPI:", error.message);
+    alert(error.message); // Mostra o erro para o usuário
+    setPontosFiltrados([]); // Limpa os pontos em caso de erro
+  } finally {
+    setIsLoadingPageData(false); // Termina o loading
+    console.log("--- buscarPontosFiltradosDaAPI finalizado ---");
+  }
+};
+
+useEffect(() => {
+  if (cityDetails?.id) {
+    buscarPontosFiltradosDaAPI();
+  }
+}, [filtrosMapa, cityDetails?.id]); 
+// Executa quando filtrosMapa ou cityDetails.id mudar
+    // Tenta obter os dados do estado da navegação
+    const initialDetailedData = location.state?.detailedData;
+
+    if (initialDetailedData && initialDetailedData.cidade) {
+      // console.log("Dados da cidade recebidos via location.state:", initialDetailedData);
+      setCityDetails(initialDetailedData.cidade);
+      setUserCargo(initialDetailedData.cargo);
+      setCityDevices(initialDetailedData.dispositivos || {});
+      setIsLoadingPageData(false); // Dados carregados
+    } else {
+      // Se não vieram pelo estado (ex: refresh), tenta buscar pelo ID na sessionStorage
+      const cityIdFromSession = sessionStorage.getItem('currentCityId');
+      if (cityIdFromSession) {
+        // console.log(`Dados não encontrados no location.state. Buscando para cityId: ${cityIdFromSession}`);
+        fetchCityDataById(cityIdFromSession); // Esta função vai setar setIsLoadingPageData(false) no finally
+      } else {
+        // Sem dados no estado e sem ID na sessão, não há como carregar a cidade
+        console.error("ID da cidade para carregamento não encontrado (nem via estado, nem via sessionStorage).");
+        alert("Não foi possível carregar os dados da cidade. Selecione uma cidade novamente.");
+        navigate("/"); // Volta para a página inicial
+        setIsLoadingPageData(false);
+      }
+    }
+  // Dependências: loadingAuth e usuarioLogado para reagir a mudanças de login/auth.
+  // location.state é incluído para que, se por algum motivo ele mudar (raro pós-montagem), a lógica seja reavaliada.
+  // navigate é uma dependência estável.
+
+
   useEffect(() => {
-    if (citySelecionada && categoriaSelecionada) {
-      setPontosFiltrados(citySelecionada.pontos?.[categoriaSelecionada] || []);
+    if (cityDetails && cityDetails.pontos && categoriaSelecionada) {
+      setPontosFiltrados(cityDetails.pontos[categoriaSelecionada] || []);
+    } else if (cityDetails && !cityDetails.pontos && categoriaSelecionada) {
+      setPontosFiltrados([]);
     } else {
       setPontosFiltrados([]);
     }
-  }, [categoriaSelecionada, citySelecionada]);
+  }, [categoriaSelecionada, cityDetails]);
 
-  // Seus outros manipuladores (handleLogoutClick, etc.) permanecem aqui...
   const handleLogoutClick = () => {
     logout();
-    sessionStorage.removeItem('currentCityId');
-    sessionStorage.removeItem('currentCityCargo');
+    Cookies.remove("userName");
+    Cookies.remove("validation_hash");
     navigate("/login");
   };
 
-  const handleToggleSidebar = () => setShowSidebar(!showSidebar);
-
-  const handleTempFiltroChange = (categoria) => { 
-    setTempFiltrosMapa(prev => ({ ...prev, [categoria]: !prev[categoria] }));
+  const handleToggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+    setTimeout(() => { if (mapRef.current) { mapRef.current.invalidateSize(); }}, 300);
   };
 
-  const confirmarFiltros = () => setFiltrosMapa({ ...tempFiltrosMapa });
+  const handleTempFiltroChange = (categoria) => { 
+    setTempFiltrosMapa(prev => ({...prev, [categoria]: !prev[categoria] }));
+  };
+
+  const confirmarFiltros = () => {
+    setFiltrosMapa({ ...tempFiltrosMapa });
+  };
+
+  if (loadingAuth || isLoadingPageData) { // Condição de loading principal
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-gray-50">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="ml-3 text-gray-700">Carregando dados da cidade...</p>
+        </div>
+    );
+  }
   
-
-  // Lógica de renderização condicional antes do return JSX
-  if (loadingAuth || loading) { // Mostra carregando se auth ou dados da cidade estiverem carregando
-    return <div className="flex justify-center items-center min-h-screen">Carregando...</div>;
+  // Após o loading, se cityDetails ainda for nulo, é um erro que não foi pego antes ou falha no fetch
+  if (!cityDetails) {
+      return (
+          <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50">
+              <h2 className="text-xl text-red-600 mb-4">Erro ao Carregar Dados</h2>
+              <p className="text-gray-700 mb-4">Não foi possível carregar os detalhes da cidade. Por favor, tente novamente.</p>
+              <button 
+                  onClick={() => navigate("/")}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                  Voltar para a Página Inicial
+              </button>
+          </div>
+      );
   }
 
-  if (!usuarioLogado) {
-    // O useEffect já deve ter redirecionado, mas como uma defesa extra
-    return null;
-  }
+  const isValidCoordinates = cityDetails.coordenadas && 
+  Array.isArray(cityDetails.coordenadas) &&
+  cityDetails.coordenadas.length === 2 &&
+  typeof cityDetails.coordenadas[0] === "number" &&
+  typeof cityDetails.coordenadas[1] === "number" &&
+  !isNaN(cityDetails.coordenadas[0]) &&
+  !isNaN(cityDetails.coordenadas[1]);
+
+
 
   return (
-
-    
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-gray-100 flex">
       <Sidebar 
         activeItem={categoriaSelecionada} 
-        className={`${showSidebar ? "block" : "hidden md:block"}`}
+        setActiveItem={setCategoriaSelecionada}
+        className={`${showSidebar ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 transition-transform duration-300 ease-in-out fixed md:static z-40`}
       />
-
       
-      
-      {/* Conteúdo Principal */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Cabeçalho */}
-        <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${showSidebar && window.innerWidth < 768 ? "ml-64" : "ml-0"} md:ml-0`}>
+        <header className="bg-white bg-opacity-90 shadow-sm py-3 px-6 flex justify-between items-center sticky top-0 z-30 backdrop-blur-sm">
+          <div className="flex items-center space-x-4 min-w-0"> {/* Adicionado min-w-0 para truncar corretamente */}
             <button 
               onClick={handleToggleSidebar}
-              className="md:hidden text-gray-500 hover:text-gray-700"
+              className="text-gray-600 hover:text-gray-800 focus:outline-none"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-2xl font-bold text-gray-800">{citySelecionada.name}</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800 truncate" title={cityDetails.name}>
+                {cityDetails.name || "Gerenciar Cidade"}
+            </h1>
           </div>
           
-          {/* Menu do Usuário */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-2 focus:outline-none"
+              className="flex items-center space-x-2 focus:outline-none group"
+              aria-label="Menu do usuário"
             >
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-lg font-medium shadow-md group-hover:shadow-lg transition-all">
                 {Cookies.get("userName")?.charAt(0).toUpperCase() || "U"}
               </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-gray-500 transition-transform ${showUserMenu ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
             </button>
-            
+
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
-                <button
-                  onClick={handleLogoutClick}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  Sair da Conta
-                </button>
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-100 divide-y divide-gray-100">
+                <div className="px-4 py-3">
+                  <p className="text-sm font-medium text-gray-900">{Cookies.get("userName") || "Usuário"}</p>
+                  <p className="text-xs text-gray-500 truncate">{Cookies.get("validation_hash") || "Hash de validação"}</p>
+                </div>
+                <div className="py-1">
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Dados da Conta</span>
+                  </button>
+                </div>
+                <div className="py-1">
+                  <button
+                    onClick={handleLogoutClick}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Sair</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </header>
-  
-        {/* Conteúdo */}
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          {/* Seção Superior - Informações e Filtros */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Informações da Cidade */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Informações da cidade</h2>
-              <div className="space-y-2">
-                <p className="font-semibold">Cond. {citySelecionada.name}</p>
-                <p>{citySelecionada.city}, {citySelecionada.state}</p>
-              </div>
-            </div>
-  
-            {/* Configurações do Mapa */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Configurações do mapa</h2>
-              <p className="text-sm mb-2">Filtrar dispositivos:</p>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(tempFiltrosMapa).map(([categoria, ativo]) => (
-                  <label key={categoria} className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox"
-                      checked={ativo}
-                      onChange={() => handleTempFiltroChange(categoria)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="capitalize text-sm">{categoria}</span>
-                  </label>
-                ))}
-              </div>
-              <button
-                onClick={confirmarFiltros}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
-                Confirmar filtros
-              </button>
-            </div>
-          </div>
-  
-          {/* Mapa */}
-          <section className="mb-8">
-            <div className="h-96 w-full rounded-xl overflow-hidden shadow-lg border border-gray-200">
-              <MapContainer
-                center={citySelecionada.coordenadas}
-                zoom={15}
-                scrollWheelZoom={true}
-                style={{ height: "100%", width: "100%" }}
-                whenCreated={(map) => {
-                  mapRef.current = map;
-                }}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-                />
-  
-                <MapViewControl center={citySelecionada.coordenadas} zoom={15} />
-  
-                <Marker position={citySelecionada.coordenadas} icon={customIcon}>
-                  <Popup>
-                    {citySelecionada.name}, {citySelecionada.city}
-                  </Popup>
-                </Marker>
-  
-                {Object.entries(filtrosMapa).map(([categoria, ativo]) => (
-                  ativo && citySelecionada.pontos?.[categoria]?.map((ponto, index) => (
-                    <Marker key={`${categoria}-${index}`} position={ponto} icon={customIcon}>
-                      <Popup>
-                        {categoria} - Ponto {index + 1}
-                      </Popup>
-                    </Marker>
-                  ))
-                ))}
-              </MapContainer>
-            </div>
-          </section>
-  
-          {/* Estatísticas */}
-          <section className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Estatísticas</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(filtrosMapa).map(([categoria, ativo]) => (
-                ativo && (
-                  <div 
-                    key={categoria} 
-                    className={`p-4 rounded-lg ${
-                      categoria === "iluminacao" ? "bg-blue-50 text-blue-600" :
-                      categoria === "drenagem" ? "bg-green-50 text-green-600" :
-                      categoria === "lixo" ? "bg-yellow-50 text-yellow-600" :
-                      "bg-purple-50 text-purple-600"
-                    }`}
-                  >
-                    <p className="text-sm capitalize">{categoria}</p>
-                    <p className="font-bold text-2xl">
-                      {citySelecionada.pontos?.[categoria]?.length || 0}
-                    </p>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+            <> {/* Removido o 'loading' ternário daqui, pois já é tratado acima */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div className="lg:col-span-1 bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-xl font-semibold text-gray-700 mb-3">Informações</h2>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p><span className="font-medium text-gray-700">Nome:</span> {cityDetails.name}</p>
+                    <p><span className="font-medium text-gray-700">Cidade:</span> {cityDetails.city}</p>
+                    <p><span className="font-medium text-gray-700">Estado:</span> {cityDetails.state}</p>
+                    <p><span className="font-medium text-gray-700">ID:</span> {cityDetails.id}</p>
+                    {userCargo && Object.values(userCargo).length > 0 && (
+                        <p><span className="font-medium text-gray-700">Cargo:</span> {Object.values(userCargo).join(", ")}</p>
+                    )}
                   </div>
-                )
-              ))}
-            </div>
-          </section>
-  
-          {/* Lista de Pontos da Categoria Selecionada */}
-          {categoriaSelecionada && (
-            <section className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">
-                  Pontos de {categoriaSelecionada} ({pontosFiltrados.length})
-                </h2>
-                {filtrosMapa[categoriaSelecionada] === false && (
-                  <span className="text-sm text-red-500">(Filtro desativado)</span>
-                )}
+                </div>
+
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-xl font-semibold text-gray-700 mb-3">Filtros do Mapa</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 mb-3">
+                    {Object.entries(tempFiltrosMapa).map(([categoria, ativo]) => (
+                      <label key={categoria} className="flex items-center space-x-2 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={ativo}
+                          onChange={() => handleTempFiltroChange(categoria)}
+                          className="form-checkbox h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="capitalize text-sm text-gray-700">{categoria.replace("_", " ")}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    onClick={confirmarFiltros}
+                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow hover:shadow-md text-sm font-medium"
+                  >
+                    Aplicar Filtros
+                  </button>
+                </div>
               </div>
               
-              <div className="space-y-3">
-                {pontosFiltrados.length > 0 ? (
-                  pontosFiltrados.map((ponto, index) => (
-                    <div key={index} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <p className="font-medium">Ponto {index + 1}</p>
-                      <p className="text-sm text-gray-500">Coordenadas: {ponto.join(", ")}</p>
+              <section className="mb-6">
+                <div className="h-96 md:h-[500px] w-full rounded-xl overflow-hidden shadow-xl border-gray-200">
+                  {isValidCoordinates ? (
+                    <MapContainer
+                      center={cityDetails.coordenadas}
+                      zoom={15}
+                      scrollWheelZoom={true}
+                      style={{ height: "100%", width: "100%" }}
+                      whenCreated={(map) => { mapRef.current = map; }}
+                    >
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+                      />
+                      <MapViewControl center={cityDetails.coordenadas} zoom={15} />
+                      <Marker position={cityDetails.coordenadas} icon={customIcon}>
+                        <Popup>{cityDetails.name}, {cityDetails.city}</Popup>
+                      </Marker>
+
+                    {Object.entries(filtrosMapa).map(([categoria, ativo]) =>
+  ativo && cityDetails.pontos?.[categoria]?.map((ponto, index) => {
+    let coords = null;
+
+    if (Array.isArray(ponto) && ponto.length === 2 && !isNaN(ponto[0]) && !isNaN(ponto[1])) {
+      coords = ponto;
+    } else if (ponto && typeof ponto === "object" && "lat" in ponto && "lng" in ponto) {
+      coords = [ponto.lat, ponto.lng];
+    }
+
+    return coords && (
+      <Marker
+        key={`${categoria}-${coords[0]}-${coords[1]}-${index}`}
+        position={coords}
+        icon={customIcon}
+      >
+        <Popup>{categoria.replace("_", " ")} - Ponto {index + 1}</Popup>
+      </Marker>
+    );
+  })
+)}
+
+                    </MapContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full bg-gray-200">
+                      <p className="text-gray-600">Coordenadas da cidade não disponíveis ou inválidas para exibir o mapa.</p>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">
-                    {filtrosMapa[categoriaSelecionada] 
-                      ? "Nenhum ponto cadastrado nesta categoria" 
-                      : "Categoria filtrada - ative o filtro para visualizar"}
-                  </p>
-                )}
-              </div>
-            </section>
-          )}
+                  )}
+                </div>
+              </section>
+
+              <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 className="text-xl font-semibold text-gray-700 mb-4">Estatísticas Gerais</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {Object.entries(filtrosMapa).map(([categoria, ativo]) => (
+                    ativo && (
+                      <div 
+                        key={categoria} 
+                        className={`p-4 rounded-lg shadow ${
+                          categoria === "iluminacao" ? "bg-yellow-100 text-yellow-700" :
+                          categoria === "drenagem" ? "bg-blue-100 text-blue-700" :
+                          categoria === "lixo" ? "bg-green-100 text-green-700" :
+                          "bg-purple-100 text-purple-700"
+                        }`}
+                      >
+                        <p className="text-sm capitalize font-medium">{categoria.replace("_", " ")}</p>
+                        <p className="font-bold text-2xl">{cityDetails.pontos?.[categoria]?.length || 0}</p>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </section>
+
+              {categoriaSelecionada && (
+                <section className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-gray-700">
+                      Pontos de {categoriaSelecionada.replace("_", " ")} ({pontosFiltrados.length})
+                    </h2>
+                    {filtrosMapa[categoriaSelecionada] === false && (
+                      <span className="text-xs text-red-500 bg-red-100 px-2 py-1 rounded">(Filtro desativado)</span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {pontosFiltrados.length > 0 ? (
+                      pontosFiltrados.map((ponto, index) => (
+                        (Array.isArray(ponto) && ponto.length === 2 && !isNaN(ponto[0]) && !isNaN(ponto[1])) && 
+                          <div key={`${categoriaSelecionada}-ponto-${ponto[0]}-${ponto[1]}-${index}`} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <p className="font-medium text-gray-800">Ponto {index + 1}</p>
+                            <p className="text-sm text-gray-600">Coordenadas: {ponto.join(", ")}</p>
+                          </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        {filtrosMapa[categoriaSelecionada] 
+                          ? "Nenhum ponto cadastrado nesta categoria." 
+                          : "Categoria filtrada - ative o filtro para visualizar os pontos."}
+                      </p>
+                    )}
+                  </div>
+                </section>
+              )}
+            </>
         </main>
       </div>
     </div>
