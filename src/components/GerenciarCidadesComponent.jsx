@@ -40,15 +40,13 @@ const GerenciarCidadesComponent = () => {
   const [userCargo, setUserCargo] = useState(null);
   const [cityDevices, setCityDevices] = useState({});
   
-  // Novo estado para controlar o carregamento inicial dos dados da página
   const [isLoadingPageData, setIsLoadingPageData] = useState(true);
+  const initialLoadAttemptedRef = useRef(false); // Ref para controlar a tentativa de carregamento
 
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
   const [pontosFiltrados, setPontosFiltrados] = useState([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  // 'loading' pode ser usado para outras operações específicas da página, se necessário.
-  // const [loading, setLoading] = useState(false); 
   const mapRef = useRef(null);
 
   const [tempFiltrosMapa, setTempFiltrosMapa] = useState({
@@ -56,20 +54,21 @@ const GerenciarCidadesComponent = () => {
   }); 
   const [filtrosMapa, setFiltrosMapa] = useState({ ...tempFiltrosMapa });
 
-  // Função para buscar dados da cidade se não vieram pelo location.state
   const fetchCityDataById = async (cityId) => {
-    // setIsLoadingPageData(true); // Já é true ou será setado antes da chamada
+    // Não precisa setar isLoadingPageData(true) aqui, pois o useEffect já o faz ou o estado inicial é true
     try {
       const currentUserName = Cookies.get("userName");
       const validationHash = Cookies.get("validation_hash");
+      const sessionCityId = sessionStorage.getItem('currentCityId');
 
       if (!currentUserName || !validationHash) {
         alert("Sessão inválida ou dados de autenticação não encontrados. Faça login novamente.");
         navigate("/login");
-        return;
+        return; // Retorna para não continuar e não ir ao finally ainda sem o setIsLoadingPageData(false)
       }
 
-      const apiUrl = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${cityId}&user_name=${currentUserName}&validation_token=${validationHash}`;
+      const apiUrl = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${sessionCityId}&user_name=${currentUserName}&validation_token=${validationHash}`;
+      
       const response = await fetch(apiUrl, {
         method: "GET",
         headers: { "Accept": "application/json" },
@@ -86,7 +85,7 @@ const GerenciarCidadesComponent = () => {
         throw new Error(`Falha ao buscar dados da cidade: ${errorBody}`);
       }
 
-      const data = await response.json(); // Espera-se {cidade, cargo, dispositivos}
+      const data = await response.json();
       
       if (data && data.cidade) {
         setCityDetails(data.cidade);
@@ -98,130 +97,67 @@ const GerenciarCidadesComponent = () => {
     } catch (error) {
       console.error("Erro em fetchCityDataById:", error);
       alert(error.message);
-      navigate("/"); 
+      navigate("/paginaLogin");
     } finally {
       setIsLoadingPageData(false);
+      // initialLoadAttemptedRef.current já terá sido true para entrar aqui (se chamado pelo useEffect)
+      // ou será setado pelo useEffect após esta função completar.
     }
   };
 
-
-  // Coloque esta função dentro do seu componente GerenciarCidadesComponent
-
-const buscarPontosFiltradosDaAPI = async () => {
-  // Garante que temos os detalhes da cidade (especialmente o ID) e os filtros
-  if (!cityDetails || !cityDetails.id) {
-    console.warn("buscarPontosFiltradosDaAPI: ID da cidade não disponível em cityDetails.");
-    // setPontosFiltrados([]); // Opcional: limpar os pontos se não puder buscar
-    return; // Não pode prosseguir sem o ID da cidade
-  }
-
-  // setLoading(true); // Se você tiver um estado de loading específico para esta operação
-  // Ou pode usar o 'isLoadingPageData' se fizer sentido no fluxo
-  setIsLoadingPageData(true); // Reutilizando o estado de loading existente
-
-  const currentCityId = cityDetails.id;
-  const currentUserName = Cookies.get("userName");
-  const currentValidationHash = Cookies.get("validation_hash"); // Valor para o query param 'validation_token'
-
-  console.log("--- Iniciando buscarPontosFiltradosDaAPI ---");
-  console.log("City ID (query):", currentCityId);
-  console.log("User Name (query):", currentUserName);
-  console.log("Validation Token (query):", currentValidationHash);
-  console.log("Filtros Mapa (para query 'list_filter'):", filtrosMapa);
-
-  if (!currentUserName || !currentValidationHash) {
-    alert("Sessão inválida ou dados de autenticação não encontrados. Faça login novamente.");
-    setIsLoadingPageData(false);
-    navigate("/login"); // Redireciona se não houver autenticação
-    return;
-  }
-
-  const literalPath = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>/<list-filter>?city_id=${cityDetails.id}&user_name=${Cookies.get("userName")}&validation_token=${Cookies.get("validation_hash")}&list_filter=${JSON.stringify(filtrosMapa)}`;
-  
-  const apiUrlObject = new URL(literalPath);
-  apiUrlObject.searchParams.append('city_id', String(currentCityId));
-  apiUrlObject.searchParams.append('user_name', currentUserName);
-  apiUrlObject.searchParams.append('validation_token', currentValidationHash);
-  apiUrlObject.searchParams.append('list_filter', JSON.stringify(filtrosMapa)); 
-
-  const apiUrlString = apiUrlObject.toString();
-  console.log("URL API (buscarPontosFiltradosDaAPI):", apiUrlString);
-
-  try {
-    const response = await fetch(apiUrlString, {
-      method: "GET",
-      headers: { "Accept": "application/json" },
-    });
-
-    console.log("Status API (buscarPontosFiltradosDaAPI):", response.status, response.statusText);
-
-    if (!response.ok) {
-      // Tratar erros de CORS ou outros erros de rede/servidor
-      let errorBody = `Erro HTTP ${response.status} (${response.statusText})`;
-      try { 
-        const errorJson = await response.json(); 
-        errorBody = errorJson.detail || errorJson.message || JSON.stringify(errorJson); 
-      } catch (e) { 
-        // Se o corpo do erro não for JSON, tenta ler como texto
-        try { errorBody = await response.text() || errorBody; } catch (textErr) {}
-      }
-      throw new Error(`Falha ao buscar pontos filtrados: ${errorBody}`);
+  useEffect(() => {
+    if (loadingAuth) {
+        setIsLoadingPageData(true); // Mantém o loading visível
+        return; 
     }
 
-    const dadosFiltrados = await response.json();
-    console.log("Dados brutos dos pontos filtrados recebidos:", JSON.stringify(dadosFiltrados, null, 2));
-
-    if (Array.isArray(dadosFiltrados)) {
-      setPontosFiltrados(dadosFiltrados);
-      console.log("Estado 'pontosFiltrados' atualizado com dados da API:", dadosFiltrados);
-    } 
-    else {
-      console.warn("Formato inesperado para os pontos filtrados recebidos da API:", dadosFiltrados);
-      setPontosFiltrados([]); // Define como vazio se o formato for incorreto
+    if (!usuarioLogado) {
+      navigate("/login");
+      setIsLoadingPageData(false); // Para o loading se for redirecionar
+      return;
     }
 
-  } catch (error) {
-    console.error("Erro em buscarPontosFiltradosDaAPI:", error.message);
-    alert(error.message); // Mostra o erro para o usuário
-    setPontosFiltrados([]); // Limpa os pontos em caso de erro
-  } finally {
-    setIsLoadingPageData(false); // Termina o loading
-    console.log("--- buscarPontosFiltradosDaAPI finalizado ---");
-  }
-};
+    // Se já tentamos carregar os dados (via state ou fetch), não fazemos mais nada neste efeito
+    // a menos que location.state mude (nova navegação).
+    // O ref controla a lógica de "buscar após refresh" apenas uma vez.
+    if (initialLoadAttemptedRef.current && !location.state?.detailedData) {
+        // Se já tentou e não há NOVO location.state, apenas garante que o loading parou se os dados existem.
+        if (cityDetails && isLoadingPageData) {
+            setIsLoadingPageData(false);
+        }
+        return;
+    }
+    
+    const initialDetailedDataFromLocation = location.state?.detailedData;
 
-useEffect(() => {
-  if (cityDetails?.id) {
-    buscarPontosFiltradosDaAPI();
-  }
-}, [filtrosMapa, cityDetails?.id]); 
-// Executa quando filtrosMapa ou cityDetails.id mudar
-    // Tenta obter os dados do estado da navegação
-    const initialDetailedData = location.state?.detailedData;
-
-    if (initialDetailedData && initialDetailedData.cidade) {
-      // console.log("Dados da cidade recebidos via location.state:", initialDetailedData);
-      setCityDetails(initialDetailedData.cidade);
-      setUserCargo(initialDetailedData.cargo);
-      setCityDevices(initialDetailedData.dispositivos || {});
-      setIsLoadingPageData(false); // Dados carregados
+    if (initialDetailedDataFromLocation && initialDetailedDataFromLocation.cidade) {
+      // console.log("Dados da cidade recebidos via location.state:", initialDetailedDataFromLocation);
+      setCityDetails(initialDetailedDataFromLocation.cidade);
+      setUserCargo(initialDetailedDataFromLocation.cargo);
+      setCityDevices(initialDetailedDataFromLocation.dispositivos || {});
+      setIsLoadingPageData(false);
+      initialLoadAttemptedRef.current = true; // Dados carregados do state, tentativa concluída
     } else {
-      // Se não vieram pelo estado (ex: refresh), tenta buscar pelo ID na sessionStorage
+      // Não vieram pelo estado da navegação (ex: refresh) OU o estado não tinha .cidade
+      // E ainda não tentamos buscar (controlado pelo !initialLoadAttemptedRef.current que agora está implícito)
       const cityIdFromSession = sessionStorage.getItem('currentCityId');
       if (cityIdFromSession) {
         // console.log(`Dados não encontrados no location.state. Buscando para cityId: ${cityIdFromSession}`);
-        fetchCityDataById(cityIdFromSession); // Esta função vai setar setIsLoadingPageData(false) no finally
+        // Marcamos que a tentativa de carregamento vai começar
+        initialLoadAttemptedRef.current = true; 
+        setIsLoadingPageData(true); // Garante que está carregando ANTES da chamada async
+        fetchCityDataById(cityIdFromSession); // Esta função setará isLoadingPageData(false) no finally
       } else {
-        // Sem dados no estado e sem ID na sessão, não há como carregar a cidade
         console.error("ID da cidade para carregamento não encontrado (nem via estado, nem via sessionStorage).");
         alert("Não foi possível carregar os dados da cidade. Selecione uma cidade novamente.");
-        navigate("/"); // Volta para a página inicial
+        navigate("/"); 
         setIsLoadingPageData(false);
+        initialLoadAttemptedRef.current = true; // Tentativa concluída (falhou em encontrar ID)
       }
     }
-  // Dependências: loadingAuth e usuarioLogado para reagir a mudanças de login/auth.
-  // location.state é incluído para que, se por algum motivo ele mudar (raro pós-montagem), a lógica seja reavaliada.
-  // navigate é uma dependência estável.
+  // location.state: Se o usuário navegar para esta rota com NOVOS dados no estado (ex: outra cidade), queremos reprocessar.
+  // loadingAuth, usuarioLogado, navigate: dependências padrão para auth e navegação.
+  }, [loadingAuth, usuarioLogado, navigate, location.state, cityDetails, isLoadingPageData]); // Adicionado cityDetails e isLoadingPageData para consistência da condição de saída com ref
 
 
   useEffect(() => {
@@ -234,27 +170,24 @@ useEffect(() => {
     }
   }, [categoriaSelecionada, cityDetails]);
 
-  const handleLogoutClick = () => {
+  const handleLogoutClick = () => { /* ... (sem alterações) ... */ 
     logout();
     Cookies.remove("userName");
     Cookies.remove("validation_hash");
     navigate("/login");
   };
-
-  const handleToggleSidebar = () => {
+  const handleToggleSidebar = () => { /* ... (sem alterações) ... */ 
     setShowSidebar(!showSidebar);
     setTimeout(() => { if (mapRef.current) { mapRef.current.invalidateSize(); }}, 300);
   };
-
-  const handleTempFiltroChange = (categoria) => { 
+  const handleTempFiltroChange = (categoria) => { /* ... (sem alterações) ... */ 
     setTempFiltrosMapa(prev => ({...prev, [categoria]: !prev[categoria] }));
   };
-
-  const confirmarFiltros = () => {
+  const confirmarFiltros = () => { /* ... (sem alterações) ... */ 
     setFiltrosMapa({ ...tempFiltrosMapa });
   };
 
-  if (loadingAuth || isLoadingPageData) { // Condição de loading principal
+  if (loadingAuth || isLoadingPageData) {
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-50">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -263,7 +196,6 @@ useEffect(() => {
     );
   }
   
-  // Após o loading, se cityDetails ainda for nulo, é um erro que não foi pego antes ou falha no fetch
   if (!cityDetails) {
       return (
           <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50">
@@ -280,16 +212,14 @@ useEffect(() => {
   }
 
   const isValidCoordinates = cityDetails.coordenadas && 
-  Array.isArray(cityDetails.coordenadas) &&
-  cityDetails.coordenadas.length === 2 &&
-  typeof cityDetails.coordenadas[0] === "number" &&
-  typeof cityDetails.coordenadas[1] === "number" &&
-  !isNaN(cityDetails.coordenadas[0]) &&
-  !isNaN(cityDetails.coordenadas[1]);
-
-
+                           Array.isArray(cityDetails.coordenadas) && 
+                           cityDetails.coordenadas.length === 2 &&
+                           !isNaN(parseFloat(cityDetails.coordenadas[0])) &&
+                           !isNaN(parseFloat(cityDetails.coordenadas[1]));
 
   return (
+    // JSX do componente (sem alterações significativas na estrutura, apenas usando cityDetails)
+    // ... (cole o JSX da resposta anterior aqui, garantindo que usa cityDetails.name, etc.) ...
     <div className="min-h-screen bg-gray-100 flex">
       <Sidebar 
         activeItem={categoriaSelecionada} 
@@ -299,7 +229,7 @@ useEffect(() => {
       
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${showSidebar && window.innerWidth < 768 ? "ml-64" : "ml-0"} md:ml-0`}>
         <header className="bg-white bg-opacity-90 shadow-sm py-3 px-6 flex justify-between items-center sticky top-0 z-30 backdrop-blur-sm">
-          <div className="flex items-center space-x-4 min-w-0"> {/* Adicionado min-w-0 para truncar corretamente */}
+          <div className="flex items-center space-x-4 min-w-0">
             <button 
               onClick={handleToggleSidebar}
               className="text-gray-600 hover:text-gray-800 focus:outline-none"
@@ -360,7 +290,7 @@ useEffect(() => {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
-            <> {/* Removido o 'loading' ternário daqui, pois já é tratado acima */}
+            <>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div className="lg:col-span-1 bg-white rounded-xl shadow-lg p-6">
                   <h2 className="text-xl font-semibold text-gray-700 mb-3">Informações</h2>
@@ -407,7 +337,7 @@ useEffect(() => {
                       zoom={15}
                       scrollWheelZoom={true}
                       style={{ height: "100%", width: "100%" }}
-                      whenCreated={(map) => { mapRef.current = map; }}
+                      whenCreated={(mapInstance) => { mapRef.current = mapInstance; }}
                     >
                       <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -418,28 +348,14 @@ useEffect(() => {
                         <Popup>{cityDetails.name}, {cityDetails.city}</Popup>
                       </Marker>
 
-                    {Object.entries(filtrosMapa).map(([categoria, ativo]) =>
-  ativo && cityDetails.pontos?.[categoria]?.map((ponto, index) => {
-    let coords = null;
-
-    if (Array.isArray(ponto) && ponto.length === 2 && !isNaN(ponto[0]) && !isNaN(ponto[1])) {
-      coords = ponto;
-    } else if (ponto && typeof ponto === "object" && "lat" in ponto && "lng" in ponto) {
-      coords = [ponto.lat, ponto.lng];
-    }
-
-    return coords && (
-      <Marker
-        key={`${categoria}-${coords[0]}-${coords[1]}-${index}`}
-        position={coords}
-        icon={customIcon}
-      >
-        <Popup>{categoria.replace("_", " ")} - Ponto {index + 1}</Popup>
-      </Marker>
-    );
-  })
-)}
-
+                      {Object.entries(filtrosMapa).map(([categoria, ativo]) =>
+                        ativo && cityDetails.pontos?.[categoria]?.map((ponto, index) => (
+                          (Array.isArray(ponto) && ponto.length === 2 && !isNaN(ponto[0]) && !isNaN(ponto[1])) && 
+                            <Marker key={`${categoria}-${ponto[0]}-${ponto[1]}-${index}`} position={ponto} icon={customIcon}>
+                              <Popup>{categoria.replace("_", " ")} - Ponto {index + 1}</Popup>
+                            </Marker>
+                        ))
+                      )}
                     </MapContainer>
                   ) : (
                     <div className="flex items-center justify-center h-full bg-gray-200">

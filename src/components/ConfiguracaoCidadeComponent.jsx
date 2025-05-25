@@ -33,14 +33,6 @@ const ConfiguracaoCidade = () => {
     validation_hash: Cookies.get("validation_hash")
   });
 
-  const [submitInvitation, setSubmitInvitation] = useState({
-    user_name: "",
-    validation_hash: Cookies.get("validation_hash"),
-    decision: true,
-    role: "manager",
-    city_id: cidadeAtual?.id || 0
-  });
-
  const addGerente = async () => {
   if (addManager.owner_user_name && addManager.validation_hash && addManager.city_name && addManager.manager_user_name && addManager.system_type) {
     setLoading(true);
@@ -134,7 +126,7 @@ const ConfiguracaoCidade = () => {
 
       const data = await response.json();
       
-      // Atualiza a lista de gerentes após a resposta bem-sucedida
+
       setGerentes(prev => [
         ...prev,
         { 
@@ -143,8 +135,6 @@ const ConfiguracaoCidade = () => {
           id: data.invitation_id || "novo-id" 
         }
       ]);
-      
-      // Limpa o formulário ou mostra mensagem de sucesso
       alert(`Convite aceito com sucesso para ${addInvitation.user_name} como ${addInvitation.role}`);
       
       return data;
@@ -162,11 +152,53 @@ const ConfiguracaoCidade = () => {
 };
   const [loading, setLoading] = useState(false);
 
+
+
+const getInvitations = async (username, validation_hash) => {
+  if (!username || !validation_hash) {
+    alert("Nome de usuário e token de validação são obrigatórios");
+    throw new Error("Campos obrigatórios não preenchidos");
+  }
+
+  setLoading(true);
+  try {
+    const response = await fetch(
+      `http://56.125.35.215:8000/user/manager/get-invitations/<user_name>/<validation_token>?user_name=${username}&validation_token=${validation_hash}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      let serverErrorMessage = "Erro ao buscar convites no servidor";
+      try {
+        const errorData = await response.json();
+        serverErrorMessage = errorData.message || errorData.detail || JSON.stringify(errorData);
+      } catch (e) {
+        serverErrorMessage = `Erro ${response.status}: ${response.statusText}`;
+      }
+      throw new Error(serverErrorMessage);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar convites:", error);
+    alert(`Erro ao buscar convites: ${error.message}`);
+    throw error;
+  } finally {
+    setLoading(false);
+  }
+};
+
 const fetchCityManagers = async () => {
   try {
     setLoading(true);
 
-    const cityData = JSON.parse(localStorage.getItem('cidadeAtual')); // Chave específica
+    const cityData = JSON.parse(localStorage.getItem('cidadeAtual')); 
     const cityId = cityData?.id;
 
     if (!cityId) {
@@ -183,7 +215,6 @@ const fetchCityManagers = async () => {
 
     const url = `http://56.125.35.215:8000/city/get-managers/<city_id>/<username>/<validation_token>?city_id=${cityId}&username=${username}&validation_token=${validationToken}`;
 
-    // 4. Fazer a requisição
     const response = await fetch(url, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -193,14 +224,12 @@ const fetchCityManagers = async () => {
       const errorData = await response.json().catch(() => null);
       throw new Error(errorData?.message || "Erro ao buscar gerentes");
     }
-
-    // 5. Atualizar estado dos gerentes
     const managers = await response.json();
     setGerentes(
       managers.map((manager) => ({
         nome: manager.user_name,
         cargo: manager.system_type,
-        id: manager.id, // Usando o ID correto da resposta
+        id: manager.id, 
       }))
     );
 
@@ -214,130 +243,145 @@ const fetchCityManagers = async () => {
 
 
 
-  return (
-    <div className="flex h-screen bg-gray-300">
+ return (
+    <div className="flex h-screen bg-gray-100 font-sans">
       <Sidebar activeItem="configuracoes" />
-      <main className="flex-1 p-4 text-black">
-        <h1 className="text-xl font-bold mb-2">Configurações da cidade</h1>
-        <hr className="border border-black mb-4 w-full max-w-md" />
 
-        {/* Seção de Testes */}
-        <div className="mt-4 p-4 border border-dashed border-gray-400 rounded">
-          <h3 className="font-medium mb-2">Testes</h3>
-          <button
-            onClick={testAdicionarGerente}
-            className="px-4 py-1 bg-blue-400 text-white rounded hover:bg-blue-500"
-          >
-            Testar Adição de Gerente
-          </button>
-          <p className="text-xs text-gray-600 mt-1">
-            Verifique o console do navegador para os resultados
-          </p>
+      <main className="flex-1 p-6 sm:p-8 space-y-8 overflow-y-auto">
+        {loading && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-white"></div>
+            <p className="ml-3 text-white text-lg">Carregando...</p>
+          </div>
+        )}
+
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1">Configurações da cidade</h1>
+          <p className="text-sm text-gray-600 mb-6">Gerencie as configurações e administradores da sua cidade.</p>
+          <hr className="border-gray-300" />
         </div>
 
-        {/* Chave de Conexão */}
-        <div className="mb-6">
-          <label className="block font-medium mb-1">Chave de conexão:</label>
-          <div className="flex items-center max-w-md">
+        {/* Chave de Conexão Section */}
+        <section className="p-6 bg-white rounded-xl shadow-lg">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">Chave de conexão</h2>
+          <div className="flex items-center space-x-3">
             <input
+              id="chaveConexao"
               type="text"
-              value={chave}
+              value={chaveConexao}
               readOnly
-              className="flex-1 border border-black px-2 py-1 rounded-sm bg-gray-100"
+              className="flex-grow p-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm sm:text-sm focus:outline-none cursor-not-allowed"
             />
             <button
-              onClick={atualizarChave}
-              className="ml-2 px-2 border border-black rounded-sm bg-gray-200 hover:bg-gray-300"
+              onClick={() => {
+                // Lógica para copiar para clipboard ou atualizar
+                navigator.clipboard.writeText(chaveConexao)
+                  .then(() => console.log('Chave copiada!')) // Substituir por feedback visual
+                  .catch(err => console.error('Erro ao copiar chave:', err));
+              }}
+              title="Copiar chave"
+              className="p-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              🔄
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
             </button>
           </div>
-        </div>
+        </section>
 
         {/* Tabela de Gerentes */}
-        <div className="mb-6">
-          <label className="block font-medium mb-2">Gerentes:</label>
-          <table className="border border-black w-full max-w-2xl">
-            <thead>
-              <tr className="border-b border-black">
-                <th className="px-4 py-2 text-left">Nome</th>
-                <th className="px-4 py-2 text-left">Cargo</th>
-                <th className="px-4 py-2 text-left">ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gerentes.map((gerente, index) => (
-                <tr key={index} className="border-b border-black">
-                  <td className="px-4 py-2">
-                    <input
-                      type="text"
-                      value={gerente.nome}
-                      readOnly
-                      className="w-full bg-transparent border-none focus:outline-none"
-                    />
-                  </td>
-                  <td className="px-4 py-2">
-                    <input
-                      type="text"
-                      value={gerente.cargo}
-                      readOnly
-                      className="w-full bg-transparent border-none focus:outline-none"
-                    />
-                  </td>
-                  <td className="px-4 py-2">
-                    <input
-                      type="text"
-                      value={gerente.id}
-                      readOnly
-                      className="w-full bg-transparent border-none focus:outline-none"
-                    />
-                  </td>
+        <section className="p-6 bg-white rounded-xl shadow-lg">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">Gerentes Atuais</h2>
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cargo</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {gerentes.length > 0 ? gerentes.map((gerente, index) => (
+                  <tr key={gerente.id || index} className="hover:bg-gray-50 transition duration-150 ease-in-out">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input type="text" value={gerente.nome} readOnly className="w-full bg-transparent border-none focus:outline-none focus:ring-0 p-1 text-sm text-gray-700" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input type="text" value={gerente.cargo} readOnly className="w-full bg-transparent border-none focus:outline-none focus:ring-0 p-1 text-sm text-gray-700" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input type="text" value={gerente.id} readOnly className="w-full bg-transparent border-none focus:outline-none focus:ring-0 p-1 text-sm text-gray-700" />
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="3" className="px-6 py-4 text-center text-gray-500">
+                      {loading ? 'Carregando gerentes...' : 'Nenhum gerente encontrado.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         {/* Controle de Gerentes */}
-        <div className="mb-6 space-y-2">
-          <label className="block font-medium mb-2">Adicionar novo gerente:</label>
-          <div className="flex space-x-2 max-w-md">
-            <input
-              type="text"
-              placeholder="Nome de usuário do gerente"
-              value={addManager.manager_user_name}
-              onChange={e => setAddManager(prev => ({
-                ...prev,
-                manager_user_name: e.target.value
-              }))}
-              className="flex-1 p-2 border rounded"
-            />
-            <button
-              onClick={sendManagerInvite}
-              className="px-4 py-2 bg-yellow-400 border border-black rounded hover:bg-yellow-300"
-            >
-              Adicionar
-            </button>
+        <section className="p-6 bg-white rounded-xl shadow-lg">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">Controle de Gerentes</h2>
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="manager_username" className="block text-sm font-medium text-gray-700 mb-1">
+                Adicionar novo gerente:
+              </label>
+              <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+                <input
+                  id="manager_username"
+                  type="text"
+                  placeholder="Nome de usuário do gerente"
+                  value={addManager.manager_user_name}
+                  onChange={e => setAddManager(prev => ({ ...prev, manager_user_name: e.target.value }))}
+                  className="flex-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                />
+                 <input 
+                  id="manager_system_type"
+                  type="text"
+                  placeholder="Tipo de Sistema (ex: Irrigação)"
+                  value={addManager.system_type}
+                  onChange={e => setAddManager(prev => ({ ...prev, system_type: e.target.value }))}
+                  className="flex-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                />
+                <button
+                  onClick={addGerente}
+                  disabled={loading}
+                  className="py-3 px-5 bg-yellow-400 text-black font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-opacity-50 transition duration-150 ease-in-out border border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Adicionando...' : 'Adicionar'}
+                </button>
+              </div>
+            </div>
+            <div>
+              <button
+                onClick={() => console.log('Função "Remover Gerente" não implementada')} // Substituir alert
+                className="py-2 px-5 bg-yellow-400 text-black font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-opacity-50 transition duration-150 ease-in-out border border-yellow-500"
+              >
+                Remover Gerente (UI)
+              </button>
+            </div>
           </div>
+        </section>
 
+        {/* Cidade Section */}
+        <section className="p-6 bg-white rounded-xl shadow-lg">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">Gerenciamento da Cidade</h2>
           <button
-            onClick={removerGerente}
-            className="px-4 py-2 bg-yellow-400 border border-black rounded hover:bg-yellow-300"
+            onClick={() => console.log('Função "Excluir Cidade" não implementada')} // Substituir alert
+            className="py-2 px-5 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-opacity-50 transition duration-150 ease-in-out border border-red-600"
           >
-            Remover último gerente
+            Excluir Cidade (UI)
           </button>
-        </div>
+        </section>
 
-        {/* Controle de Cidade */}
-        <div className="mt-6">
-          <label className="block font-medium mb-2">Cidade:</label>
-          <button
-            onClick={excluirCidade}
-            className="px-4 py-2 bg-yellow-400 border border-black rounded hover:bg-yellow-300"
-          >
-            Excluir Cidade
-          </button>
-        </div>
       </main>
     </div>
   );
