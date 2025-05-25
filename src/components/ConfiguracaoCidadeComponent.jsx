@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import { useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+
 import Cookies from "js-cookie";
 
 
@@ -9,6 +11,7 @@ const ConfiguracaoCidade = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const cidadeAtual = location.state;
+   const [invitations, setInvitations] = useState([]);
 
   const [gerentes, setGerentes] = useState([
     { nome: '', cargo: '', id: '' },
@@ -27,7 +30,7 @@ const ConfiguracaoCidade = () => {
 
   const [addManager, setAddManager] = useState({
     owner_user_name: Cookies.get("userName"),
-    city_name: cidadeAtual?.name || "",
+    city_name: sessionStorage.getItem('currentCity'),
     manager_user_name: "",
     system_type: "",
     validation_hash: Cookies.get("validation_hash")
@@ -93,127 +96,27 @@ const ConfiguracaoCidade = () => {
   }
 };
 
-
-
-  const submitInvitationAnswer = async () => {
-  if (addInvitation.user_name && addInvitation.validation_hash && addInvitation.city_id && addInvitation.decision && addInvitation.role) {
-    setLoading(true);
-    try {
-      const response = await fetch("http://56.125.35.215:8000/user/manager/submit-invitation-answer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_name: addInvitation.user_name,
-          validation_hash: addInvitation.validation_hash,
-          city_id: addInvitation.city_id,
-          decision: addInvitation.decision,
-          role: addInvitation.role
-        }),
-      });
-
-      if (!response.ok) {
-        let serverErrorMessage = "Erro ao enviar resposta de convite no servidor";
-        try {
-          const errorData = await response.json();
-          serverErrorMessage = errorData.message || errorData.detail || JSON.stringify(errorData);
-        } catch (e) {
-          serverErrorMessage = `Erro ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(serverErrorMessage);
-      }
-
-      const data = await response.json();
-      
-
-      setGerentes(prev => [
-        ...prev,
-        { 
-          nome: addInvitation.user_name, 
-          cargo: `Gerente (${addInvitation.role})`, 
-          id: data.invitation_id || "novo-id" 
-        }
-      ]);
-      alert(`Convite aceito com sucesso para ${addInvitation.user_name} como ${addInvitation.role}`);
-      
-      return data;
-    } catch (error) {
-      console.error("Erro ao enviar resposta de convite:", error);
-      alert(`Erro ao enviar resposta de convite: ${error.message}`);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  } else {
-    alert("Por favor, preencha todos os campos necessários");
-    throw new Error("Campos obrigatórios não preenchidos");
-  }
-};
   const [loading, setLoading] = useState(false);
-
-
-
-const getInvitations = async (username, validation_hash) => {
-  if (!username || !validation_hash) {
-    alert("Nome de usuário e token de validação são obrigatórios");
-    throw new Error("Campos obrigatórios não preenchidos");
-  }
-
-  setLoading(true);
-  try {
-    const response = await fetch(
-      `http://56.125.35.215:8000/user/manager/get-invitations/<user_name>/<validation_token>?user_name=${username}&validation_token=${validation_hash}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      let serverErrorMessage = "Erro ao buscar convites no servidor";
-      try {
-        const errorData = await response.json();
-        serverErrorMessage = errorData.message || errorData.detail || JSON.stringify(errorData);
-      } catch (e) {
-        serverErrorMessage = `Erro ${response.status}: ${response.statusText}`;
-      }
-      throw new Error(serverErrorMessage);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Erro ao buscar convites:", error);
-    alert(`Erro ao buscar convites: ${error.message}`);
-    throw error;
-  } finally {
-    setLoading(false);
-  }
-};
 
 const fetchCityManagers = async () => {
   try {
     setLoading(true);
 
-    const cityData = JSON.parse(localStorage.getItem('cidadeAtual')); 
-    const cityId = cityData?.id;
-
-    if (!cityId) {
-      throw new Error("ID da cidade não encontrado no localStorage");
+    const sessionCityId = sessionStorage.getItem('currentCityId');
+    if (!sessionCityId) {
+      throw new Error("ID da cidade não encontrado no sessionStorage"); // Ajustei localStorage para sessionStorage
     }
 
-    const username = Cookies.get("user_name");
+    const usernameCookie = Cookies.get("userName"); // Renomeei para evitar conflito com a propriedade 'username' da API
     const validationToken = Cookies.get("validation_hash");
 
-    if (!username || !validationToken) {
+    if (!usernameCookie || !validationToken) {
       throw new Error("Usuário não autenticado");
     }
 
-
-    const url = `http://56.125.35.215:8000/city/get-managers/<city_id>/<username>/<validation_token>?city_id=${cityId}&username=${username}&validation_token=${validationToken}`;
+    // A URL parece estar construída para aceitar query params, então os placeholders no path podem ser redundantes
+    // Mas se funciona, tudo bem.
+    const url = `http://56.125.35.215:8000/city/get-managers/<city_id>/<username>/<validation_token>?city_id=${sessionCityId}&username=${usernameCookie}&validation_token=${validationToken}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -224,26 +127,77 @@ const fetchCityManagers = async () => {
       const errorData = await response.json().catch(() => null);
       throw new Error(errorData?.message || "Erro ao buscar gerentes");
     }
-    const managers = await response.json();
-    setGerentes(
-      managers.map((manager) => ({
-        nome: manager.user_name,
-        cargo: manager.system_type,
-        id: manager.id, 
-      }))
-    );
+
+    const managersDataFromApi = await response.json(); // Ex: {"1": {"username": "...", "sistema": "..."}}
+    console.log("Dados brutos dos gerentes (API):", managersDataFromApi); // Para depuração
+
+    // Transforma o OBJETO em um ARRAY de gerentes
+    const mappedManagers = Object.entries(managersDataFromApi).map(([id, managerDetails]) => ({
+      id: id,                     // O 'id' é a chave do objeto (ex: "1", "2")
+      nome: managerDetails.username, // Corrigido para 'username'
+      cargo: managerDetails.sistema, // Corrigido para 'sistema' (ou adapte para "Gerente de...")
+                                  // Se quiser "Gerente de iluminacao", seria: `Gerente de ${managerDetails.sistema}`
+    }));
+
+    console.log("Gerentes mapeados para o estado:", mappedManagers); // Para depuração
+    setGerentes(mappedManagers);
 
   } catch (error) {
     console.error("Erro ao buscar gerentes:", error);
+    alert(`Erro: ${error.message}`);
+    setGerentes([]); // Define como array vazio em caso de erro para limpar a tabela ou mostrar "Nenhum gerente"
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchCityManagers();
+}, []);
+
+const getConectionKey = async () => {
+  try {
+    setLoading(true);
+
+    const sessionCityId = sessionStorage.getItem('currentCityId');
+    if (!sessionCityId) {
+      throw new Error("ID da cidade não encontrado no localStorage");
+    }
+
+    const owner = Cookies.get("userName");
+    const validation_token = Cookies.get("validation_hash");
+
+    if (!owner || !validation_token) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const url = `http://56.125.35.215:8000/city/get-connection-key/<city_id>/<owner_username>/<validation_token>?city_id=${sessionCityId}&owner=${owner}&validation_token=${validation_token}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || "Erro ao buscar chave de conexão");
+    }
+
+    const data = await response.json();
+    setChave(data.key);
+  } catch (error) {
+    console.error("Erro ao buscar chave de conexão:", error);
     alert(`Erro: ${error.message}`);
   } finally {
     setLoading(false);
   }
 };
 
+useEffect(() => {
+  getConectionKey();
+}, []);
 
-
- return (
+  return (
     <div className="flex h-screen bg-gray-100 font-sans">
       <Sidebar activeItem="configuracoes" />
 
@@ -268,16 +222,14 @@ const fetchCityManagers = async () => {
             <input
               id="chaveConexao"
               type="text"
-              value={chaveConexao}
-              readOnly
-              className="flex-grow p-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm sm:text-sm focus:outline-none cursor-not-allowed"
-            />
+              value={chave} readOnly className="flex-grow p-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm sm:text-sm focus:outline-none cursor-not-allowed"/>
             <button
               onClick={() => {
-                // Lógica para copiar para clipboard ou atualizar
-                navigator.clipboard.writeText(chaveConexao)
-                  .then(() => console.log('Chave copiada!')) // Substituir por feedback visual
-                  .catch(err => console.error('Erro ao copiar chave:', err));
+                if (chave) {
+                  navigator.clipboard.writeText(chave)
+                    .then(() => alert('Chave copiada!'))
+                    .catch(err => console.error('Erro ao copiar chave:', err));
+                }
               }}
               title="Copiar chave"
               className="p-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -343,7 +295,7 @@ const fetchCityManagers = async () => {
                   onChange={e => setAddManager(prev => ({ ...prev, manager_user_name: e.target.value }))}
                   className="flex-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
                 />
-                 <input 
+                <input
                   id="manager_system_type"
                   type="text"
                   placeholder="Tipo de Sistema (ex: Irrigação)"
@@ -351,6 +303,7 @@ const fetchCityManagers = async () => {
                   onChange={e => setAddManager(prev => ({ ...prev, system_type: e.target.value }))}
                   className="flex-1 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
                 />
+
                 <button
                   onClick={addGerente}
                   disabled={loading}
@@ -371,6 +324,54 @@ const fetchCityManagers = async () => {
           </div>
         </section>
 
+        {/* Convites Pendentes Section */}
+        <section className="p-6 bg-white rounded-xl shadow-lg">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">Convites Pendentes</h2>
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            {invitations.length > 0 ? (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cidade</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Função</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {invitations.map((invitation) => (
+                    <tr key={invitation.id} className="hover:bg-gray-50 transition duration-150 ease-in-out">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{invitation.city_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{invitation.role}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => submitInvitationAnswer(invitation.id, invitation.city_id, invitation.role, true)}
+                            className="py-1 px-3 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-opacity-50 transition duration-150 ease-in-out"
+                            disabled={loading}
+                          >
+                            Aceitar
+                          </button>
+                          <button
+                            onClick={() => submitInvitationAnswer(invitation.id, invitation.city_id, invitation.role, false)}
+                            className="py-1 px-3 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-opacity-50 transition duration-150 ease-in-out"
+                            disabled={loading}
+                          >
+                            Rejeitar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="p-4 text-center text-gray-500">
+                {loading ? 'Buscando convites...' : 'Nenhum convite pendente.'}
+              </p>
+            )}
+          </div>
+        </section>
+
         {/* Cidade Section */}
         <section className="p-6 bg-white rounded-xl shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Gerenciamento da Cidade</h2>
@@ -381,11 +382,9 @@ const fetchCityManagers = async () => {
             Excluir Cidade (UI)
           </button>
         </section>
-
       </main>
     </div>
   );
 };
-
 
 export default ConfiguracaoCidade;

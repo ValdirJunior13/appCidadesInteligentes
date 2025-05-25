@@ -99,7 +99,8 @@ const PaginaLoginComponent = () => {
 
       const novaCidade = {
         ...novoEndereco,
-        id: data.id 
+        id: data.id,
+        city_name: data.city_name,
       };
 
       setCitys((prevCitys) => {
@@ -192,6 +193,7 @@ const buscarCidades = async () => {
 
 const handleCityClick = (city) => {
   sessionStorage.setItem('currentCityId', city.id);
+  sessionStorage.setItem('currentCity', city.city_name);
   navigate("/gerenciamentocidades", { state: { city } });
 };
 

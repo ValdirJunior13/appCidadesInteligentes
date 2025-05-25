@@ -59,15 +59,14 @@ const GerenciarCidadesComponent = () => {
     try {
       const currentUserName = Cookies.get("userName");
       const validationHash = Cookies.get("validation_hash");
-      const sessionCityId = sessionStorage.getItem('currentCityId');
-
+     
       if (!currentUserName || !validationHash) {
         alert("Sessão inválida ou dados de autenticação não encontrados. Faça login novamente.");
         navigate("/login");
         return; // Retorna para não continuar e não ir ao finally ainda sem o setIsLoadingPageData(false)
       }
 
-      const apiUrl = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${sessionCityId}&user_name=${currentUserName}&validation_token=${validationHash}`;
+      const apiUrl = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${cityId}&user_name=${currentUserName}&validation_token=${validationHash}`;
       
       const response = await fetch(apiUrl, {
         method: "GET",
@@ -159,6 +158,94 @@ const GerenciarCidadesComponent = () => {
   // loadingAuth, usuarioLogado, navigate: dependências padrão para auth e navegação.
   }, [loadingAuth, usuarioLogado, navigate, location.state, cityDetails, isLoadingPageData]); // Adicionado cityDetails e isLoadingPageData para consistência da condição de saída com ref
 
+
+  const buscarPontosFiltradosDaAPI = async () => {
+  // Garante que temos os detalhes da cidade (especialmente o ID) e os filtros
+  if (!cityDetails || !cityDetails.id) {
+    console.warn("buscarPontosFiltradosDaAPI: ID da cidade não disponível em cityDetails.");
+    // setPontosFiltrados([]); // Opcional: limpar os pontos se não puder buscar
+    return; // Não pode prosseguir sem o ID da cidade
+  }
+
+  // setLoading(true); // Se você tiver um estado de loading específico para esta operação
+  // Ou pode usar o 'isLoadingPageData' se fizer sentido no fluxo
+  setIsLoadingPageData(true); // Reutilizando o estado de loading existente
+
+  const sessionCityId = sessionStorage.getItem('currentCityId');
+  const currentUserName = Cookies.get("userName");
+  const currentValidationHash = Cookies.get("validation_hash"); // Valor para o query param 'validation_token'
+
+  console.log("--- Iniciando buscarPontosFiltradosDaAPI ---");
+  console.log("City ID (query):", currentCityId);
+  console.log("User Name (query):", currentUserName);
+  console.log("Validation Token (query):", currentValidationHash);
+  console.log("Filtros Mapa (para query 'list_filter'):", filtrosMapa);
+
+  if (!currentUserName || !currentValidationHash) {
+    alert("Sessão inválida ou dados de autenticação não encontrados. Faça login novamente.");
+    setIsLoadingPageData(false);
+    navigate("/login"); // Redireciona se não houver autenticação
+    return;
+  }
+
+  const literalPath = `http://http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${sessionCityId}&user_name=${currentUserName}&validation_token=n${currentValidationHash}`;
+  
+  const apiUrlObject = new URL(literalPath);
+  apiUrlObject.searchParams.append('city_id', String(currentCityId));
+  apiUrlObject.searchParams.append('user_name', currentUserName);
+  apiUrlObject.searchParams.append('validation_token', currentValidationHash);
+  apiUrlObject.searchParams.append('list_filter', JSON.stringify(filtrosMapa)); 
+
+  const apiUrlString = apiUrlObject.toString();
+  console.log("URL API (buscarPontosFiltradosDaAPI):", apiUrlString);
+
+  try {
+    const response = await fetch(apiUrlString, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+    });
+
+    console.log("Status API (buscarPontosFiltradosDaAPI):", response.status, response.statusText);
+
+    if (!response.ok) {
+  // Tratar erros de CORS ou outros erros de rede/servidor
+  let errorBody = `Erro HTTP ${response.status} (${response.statusText})`;
+  
+  try { 
+    const errorJson = await response.json(); 
+    errorBody = errorJson.detail || errorJson.message || JSON.stringify(errorJson); 
+  } catch (e) { 
+    // Se o corpo do erro não for JSON, tenta ler como texto
+    try { 
+      errorBody = await response.text() || errorBody; 
+    } catch (textErr) {}
+  }
+
+  throw new Error(`Falha ao buscar pontos filtrados: ${errorBody}`);
+}
+
+
+    const dadosFiltrados = await response.json();
+    console.log("Dados brutos dos pontos filtrados recebidos:", JSON.stringify(dadosFiltrados, null, 2));
+
+    if (Array.isArray(dadosFiltrados)) {
+      setPontosFiltrados(dadosFiltrados);
+      console.log("Estado 'pontosFiltrados' atualizado com dados da API:", dadosFiltrados);
+    } 
+    else {
+      console.warn("Formato inesperado para os pontos filtrados recebidos da API:", dadosFiltrados);
+      setPontosFiltrados([]); // Define como vazio se o formato for incorreto
+    }
+
+  } catch (error) {
+    console.error("Erro em buscarPontosFiltradosDaAPI:", error.message);
+    alert(error.message); // Mostra o erro para o usuário
+    setPontosFiltrados([]); // Limpa os pontos em caso de erro
+  } finally {
+    setIsLoadingPageData(false); // Termina o loading
+    console.log("--- buscarPontosFiltradosDaAPI finalizado ---");
+  }
+};
 
   useEffect(() => {
     if (cityDetails && cityDetails.pontos && categoriaSelecionada) {
