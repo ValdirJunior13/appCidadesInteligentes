@@ -3,9 +3,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useAuth } from '../context/AuthContext'; // Ajuste o caminho
+import { useAuth } from '../context/AuthContext'; 
 import Cookies from "js-cookie";
-import Sidebar from "./Sidebar"; // Ajuste o caminho
+import Sidebar from "./Sidebar"; 
+import PropTypes from 'prop-types';
 
 // Correção para o ícone padrão do Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -29,6 +30,11 @@ const MapViewControl = ({ center, zoom }) => {
     }
   }, [center, zoom, map]);
   return null;
+};
+
+MapViewControl.propTypes = {
+  center: PropTypes.arrayOf(PropTypes.number), 
+  zoom: PropTypes.number.isRequired,
 };
 
 const GerenciarCidadesComponent = () => {
@@ -59,7 +65,7 @@ const GerenciarCidadesComponent = () => {
     try {
       const currentUserName = Cookies.get("userName");
       const validationHash = Cookies.get("validation_hash");
-     
+  
       if (!currentUserName || !validationHash) {
         alert("Sessão inválida ou dados de autenticação não encontrados. Faça login novamente.");
         navigate("/login");
@@ -176,7 +182,7 @@ const GerenciarCidadesComponent = () => {
   const currentValidationHash = Cookies.get("validation_hash"); // Valor para o query param 'validation_token'
 
   console.log("--- Iniciando buscarPontosFiltradosDaAPI ---");
-  console.log("City ID (query):", currentCityId);
+  console.log("City ID (query):", sessionCityId);
   console.log("User Name (query):", currentUserName);
   console.log("Validation Token (query):", currentValidationHash);
   console.log("Filtros Mapa (para query 'list_filter'):", filtrosMapa);
@@ -191,7 +197,7 @@ const GerenciarCidadesComponent = () => {
   const literalPath = `http://http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${sessionCityId}&user_name=${currentUserName}&validation_token=n${currentValidationHash}`;
   
   const apiUrlObject = new URL(literalPath);
-  apiUrlObject.searchParams.append('city_id', String(currentCityId));
+  apiUrlObject.searchParams.append('city_id', String(sessionCityId));
   apiUrlObject.searchParams.append('user_name', currentUserName);
   apiUrlObject.searchParams.append('validation_token', currentValidationHash);
   apiUrlObject.searchParams.append('list_filter', JSON.stringify(filtrosMapa)); 
@@ -301,12 +307,11 @@ const GerenciarCidadesComponent = () => {
   const isValidCoordinates = cityDetails.coordenadas && 
                            Array.isArray(cityDetails.coordenadas) && 
                            cityDetails.coordenadas.length === 2 &&
-                           !isNaN(parseFloat(cityDetails.coordenadas[0])) &&
-                           !isNaN(parseFloat(cityDetails.coordenadas[1]));
+                          !isNaN(parseFloat(cityDetails.coordenadas[0])) &&
+                        !isNaN(parseFloat(cityDetails.coordenadas[1]));
 
   return (
-    // JSX do componente (sem alterações significativas na estrutura, apenas usando cityDetails)
-    // ... (cole o JSX da resposta anterior aqui, garantindo que usa cityDetails.name, etc.) ...
+
     <div className="min-h-screen bg-gray-100 flex">
       <Sidebar 
         activeItem={categoriaSelecionada} 

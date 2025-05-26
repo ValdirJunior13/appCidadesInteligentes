@@ -19,14 +19,6 @@ const ConfiguracaoCidade = () => {
     { nome: '', cargo: '', id: '' }
   ]);
 
-  const [addInvitation, setAddInvitation] = useState({
-    user_name: Cookies.get("userName"),
-    validation_hash: Cookies.get("validation_hash"),
-    city_id: cidadeAtual?.id || 0,
-    decision: true,
-    role: ""
-    });
-
 
   const [addManager, setAddManager] = useState({
     owner_user_name: Cookies.get("userName"),
