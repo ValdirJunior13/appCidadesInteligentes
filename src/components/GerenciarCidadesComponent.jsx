@@ -125,8 +125,8 @@ const GerenciarCidadesComponent = () => {
 
       if (data && data.cidade) {
         setCityDetails(data.cidade);
-        setUserCargo(data.cargo); // Confirme se data.cargo está na raiz
-        setCityDevices(data.dispositivos || {}); // Confirme se data.dispositivos está na raiz
+        setUserCargo(data.cargo);
+        setCityDevices(data.dispositivos || {}); // Popula cityDevices
       } else {
         throw new Error("Formato de dados da cidade inválido recebido da API.");
       }
@@ -288,8 +288,6 @@ const GerenciarCidadesComponent = () => {
       return;
     }
 
-    // ATENÇÃO: Verifique o PATH correto para buscar PONTOS FILTRADOS.
-    // /city/get-data/ pode ser para dados gerais. Sua API pode ter outro endpoint.
     const baseApiUrl = `http://56.125.35.215:8000/city/get-data/`;
     let apiUrlString;
     try {
@@ -338,12 +336,6 @@ const GerenciarCidadesComponent = () => {
     } else if (cityDetails && !cityDetails.pontos && categoriaSelecionada) {
       setPontosFiltrados([]);
     }
-    // Não resetar para [] se categoriaSelecionada for null, para manter os dados da API
-    // se 'buscarPontosFiltradosDaAPI' for a fonte primária.
-    // Se for só filtragem local de cityDetails.pontos, o else { setPontosFiltrados([]) } pode ser necessário.
-    // O comportamento atual sugere que 'buscarPontosFiltradosDaAPI' é chamado ao aplicar filtros,
-    // e este useEffect pode ser para uma seleção de categoria na UI que filtra o que já está em cityDetails.pontos.
-    // Considere se este useEffect entra em conflito com 'buscarPontosFiltradosDaAPI'.
   }, [categoriaSelecionada, cityDetails]);
 
   const handleLogoutClick = () => {
@@ -358,7 +350,6 @@ const GerenciarCidadesComponent = () => {
   };
   const confirmarFiltros = () => {
     setFiltrosMapa({ ...tempFiltrosMapa });
-    // Após confirmar os filtros, chamar a API para buscar os pontos com os novos filtros
     buscarPontosFiltradosDaAPI();
   };
 
@@ -366,13 +357,12 @@ const GerenciarCidadesComponent = () => {
   if (loadingAuth) {
     return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div><p className="ml-3">Carregando autenticação...</p></div>;
   }
-  if (isLoadingPageData && !cityDetails) { // Loading inicial antes de cityDetails
+  if (isLoadingPageData && !cityDetails) {
     return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div><p className="ml-3">Carregando dados da cidade...</p></div>;
   }
-  if (!cityDetails && !isLoadingPageData) { // Erro se cityDetails não carregou e não está mais carregando
+  if (!cityDetails && !isLoadingPageData) {
     return <div className="flex flex-col justify-center items-center min-h-screen"><h2 className="text-xl text-red-600">Erro ao Carregar Dados</h2><p>Não foi possível carregar os detalhes. Tente novamente.</p><button onClick={() => navigate("/")} className="px-4 py-2 bg-blue-500 text-white rounded">Voltar</button></div>;
   }
-  // Loading enquanto geocodifica ou ajusta o mapa, mas cityDetails já existe
   if (cityDetails && isLoadingPageData) {
      return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div><p className="ml-3">Ajustando visualização do mapa...</p></div>;
   }
@@ -411,7 +401,6 @@ const GerenciarCidadesComponent = () => {
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-100 divide-y divide-gray-100">
                 <div className="px-4 py-3">
                   <p className="text-sm font-medium text-gray-900">{Cookies.get("userName") || "Usuário"}</p>
-                  {/* <p className="text-xs text-gray-500 truncate">{Cookies.get("validation_hash") || "Hash"}</p> */}
                 </div>
                 <div className="py-1"><button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg><span>Dados da Conta</span></button></div>
                 <div className="py-1"><button onClick={handleLogoutClick} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg><span>Sair</span></button></div>
@@ -465,11 +454,13 @@ const GerenciarCidadesComponent = () => {
                     >
                       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'/>
                       <MapViewControl center={mapViewSettings.center} zoom={mapViewSettings.zoom} bounds={mapViewSettings.bounds}/>
+                      
                       {cityCoordinatesAreValid && (
                         <Marker position={cityDetails.coordenadas.map(c => parseFloat(c))} icon={customIcon}>
                           <Popup>{cityDetails.name} ({cityDetails.cidade}, {cityDetails.estado})</Popup>
                         </Marker>
                       )}
+
                       {Object.entries(filtrosMapa).map(([categoria, ativo]) =>
                         ativo && pontosFiltrados?.map((ponto, index) => (
                           checkCoordinatesValidity(ponto) && 
@@ -478,6 +469,31 @@ const GerenciarCidadesComponent = () => {
                             </Marker>
                         ))
                       )}
+
+                      {/* NOVO: Marcadores para cityDevices */}
+                      {cityDevices && Object.entries(cityDevices).map(([deviceName, deviceData]) => {
+                        if (deviceData && typeof deviceData.lat === 'number' && typeof deviceData.long === 'number' &&
+                            checkCoordinatesValidity([deviceData.lat, deviceData.long])) {
+                          return (
+                            <Marker
+                              key={deviceData.mac_adress || deviceName} // Usar mac_adress como chave prioritária
+                              position={[deviceData.lat, deviceData.long]}
+                              icon={customIcon} 
+                            >
+                              <Popup>
+                                <b>Dispositivo:</b> {deviceName.replace("dipositivo", "Dispositivo ")}<br /> 
+                                <b>MAC Address:</b> {deviceData.mac_adress}<br />
+                                <b>Latitude:</b> {deviceData.lat}<br />
+                                <b>Longitude:</b> {deviceData.long}<br />
+                                {deviceData.tipo_sistema && <><b>Tipo:</b> {deviceData.tipo_sistema}<br /></>}
+                                {deviceData.bairro && <><b>Bairro:</b> {deviceData.bairro}<br /></>}
+                                {deviceData.rua && <><b>Rua:</b> {deviceData.rua}</>}
+                              </Popup>
+                            </Marker>
+                          );
+                        }
+                        return null;
+                      })}
                     </MapContainer>
                   ) : (
                     <div className="flex items-center justify-center h-full bg-gray-200"><p className="text-gray-600">Coordenadas da cidade não disponíveis para exibir o mapa.</p></div>
@@ -493,7 +509,6 @@ const GerenciarCidadesComponent = () => {
                       <div key={categoria} className={`p-4 rounded-lg shadow ${categoria === "iluminacao" ? "bg-yellow-100 text-yellow-700" : categoria === "drenagem" ? "bg-blue-100 text-blue-700" : categoria === "lixo" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>
                         <p className="text-sm capitalize font-medium">{categoria.replace("_", " ")}</p>
                         <p className="font-bold text-2xl">{pontosFiltrados?.filter(p => checkCoordinatesValidity(p))?.length || 0}</p>
-                        {/* Ou se cityDetails.pontos for a fonte para contagem: {cityDetails.pontos?.[categoria]?.length || 0} */}
                       </div>
                     )
                   ))}
