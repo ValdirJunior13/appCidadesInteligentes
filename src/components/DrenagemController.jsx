@@ -50,6 +50,7 @@ const checkCoordinatesValidity = (coords) => {
   // Componente para controlar a visão do mapa (centro, zoom, limites)
   const MapViewControl = ({ center, zoom, bounds }) => {
     const map = useMap();
+  }
 
   
     useEffect(() => {
