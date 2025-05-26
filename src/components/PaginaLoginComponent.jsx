@@ -175,7 +175,6 @@ notification.type === 'invitation' &&
 };
 
 
-
   const buscarCoordenadas = async () => {
     if (!novoEndereco.city || !novoEndereco.state) return;
     setLoading(true);

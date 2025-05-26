@@ -13,11 +13,20 @@ const ConfiguracaoCidade = () => {
   const cidadeAtual = location.state;
    const [invitations, setInvitations] = useState([]);
 
+
   const [gerentes, setGerentes] = useState([
     { nome: '', cargo: '', id: '' },
     { nome: '', cargo: '', id: '' },
     { nome: '', cargo: '', id: '' }
   ]);
+
+  const [systemData, setSystemData] = useState({
+    user_name: Cookies.get("userName"),
+    city_name: sessionStorage.getItem('currentCity'),
+    validation_hash: Cookies.get("validation_hash"),
+    system_name: "",
+    payload: "",
+  })
 
 
   const [addManager, setAddManager] = useState({
@@ -56,6 +65,7 @@ const ConfiguracaoCidade = () => {
         }
         throw new Error(serverErrorMessage);
       }
+      
 
       const data = await response.json();
       setGerentes(prev => [
@@ -88,7 +98,98 @@ const ConfiguracaoCidade = () => {
   }
 };
 
+
+
+const sistemaData = async () => {
+    if (
+        systemData.user_name &&
+        systemData.city_id &&
+        systemData.validation_hash &&
+        systemData.system_name &&
+        systemData.payload
+    ) {
+        setLoading(true);
+        try {
+            const response = await fetch(
+                `http://city/update/${systemData.user_name}/${systemData.validation_hash}/${systemData.system_name}/${systemData.payload}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username: systemData.user_name,
+                        validation_token: systemData.validation_hash,
+                        system_name: systemData.system_name,
+                        payload: systemData.payload,
+                        city_id: systemData.city_id,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Erro: ${response.status} - ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log("Resposta da API:", data);
+        } catch (error) {
+            console.error("Erro ao atualizar os dados do sistema:", error);
+        } finally {
+            setLoading(false);
+        }
+    }
+};
+
+
   const [loading, setLoading] = useState(false);
+
+
+  const getSistemaData = async () => {
+    try {
+        setLoading(true);
+
+        const sessionCityId = sessionStorage.getItem('currentCityId');
+        if (!sessionCityId) {
+            throw new Error("ID da cidade não encontrado no sessionStorage");
+        }
+
+ 
+        const usernameCookie = Cookies.get("userName");
+        if (!usernameCookie) {
+            throw new Error("Nome de usuário não encontrado nos cookies");
+        }
+
+        const validationToken = Cookies.get('validationToken');
+
+        if (!validationToken) {
+            throw new Error("Token de validação ou nome do sistema ausente");
+        }
+
+        const apiUrl = `http://56.125.35.215:8000/city/get-system-data/<city_id>/<username>/<validation_token>/<system_name>?city_id=${sessionCityId}&user_name=${usernameCookie}&validation_token=${validationToken}&system_name=drenagem}`;
+
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("Dados do sistema:", data);
+        return data;
+
+    } catch (error) {
+        console.error("Erro ao obter dados do sistema:", error.message);
+    } finally {
+        setLoading(false);
+    }
+};
+
 
 const fetchCityManagers = async () => {
   try {
