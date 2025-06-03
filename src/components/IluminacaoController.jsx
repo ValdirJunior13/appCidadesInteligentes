@@ -13,6 +13,20 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
+// Função helper para converter segundos para formato HH:mm
+const convertSecondsToHHMM = (totalSeconds) => {
+  if (totalSeconds === null || totalSeconds === undefined || typeof totalSeconds !== 'number' || isNaN(totalSeconds)) {
+    console.warn(`[convertSecondsToHHMM] Valor inválido ou nulo recebido: ${totalSeconds}. Retornando string vazia.`);
+    return '';
+  }
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const formattedHours = String(hours).padStart(2, '0');
+  const formattedMinutes = String(minutes).padStart(2, '0');
+  return `${formattedHours}:${formattedMinutes}`;
+};
+
+
 const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
   const centroMapa = cidadeSelecionada?.coordenadas || [-15.788, -47.879];
 
@@ -31,14 +45,14 @@ const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
     setLoading(true);
     try {
       const sessionCityId = sessionStorage.getItem('currentCityId');
-      const usernameCookie = Cookies.get("userName");
-      const validationHashCookie = Cookies.get('validation_hash');
+      const usernameCookie = Cookies.get("userName"); 
+      const validationHashCookie = Cookies.get('validation_hash'); 
 
       if (!sessionCityId || !usernameCookie || !validationHashCookie) {
         const missing = [];
         if (!sessionCityId) missing.push("ID da cidade");
-        if (!usernameCookie) missing.push("Nome de usuário");
-        if (!validationHashCookie) missing.push("Token de validação (validation_hash)");
+        if (!usernameCookie) missing.push("Nome de usuário (cookie 'userName')");
+        if (!validationHashCookie) missing.push("Token de validação (cookie 'validation_hash')");
         console.error("[getSistemaData] ERRO: Informações ausentes:", missing.join(', '));
         throw new Error(`Informações ausentes: ${missing.join(', ')}`);
       }
@@ -69,57 +83,68 @@ const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
   };
   
   useEffect(() => {
+    console.log("[IluminacaoController Mount] Chamando getSistemaData.");
     getSistemaData();
   }, []);
 
   useEffect(() => {
     if (dadosSistema) {
-      console.log("[Effect dadosSistema] Atualizando formulário:", dadosSistema);
+      console.log("[Effect dadosSistema] Atualizando formulário com:", dadosSistema);
       const { modo, l_min, l_max, h_inicio, h_fim } = dadosSistema;
 
-      if (modo === 'auto') setModoSelecionado('automatico');
-      else if (modo === 'timer') setModoSelecionado('horario');
-      else if (modo === 'manual') setModoSelecionado('manual');
-      else setModoSelecionado('automatico');
+      // 1. Corrigir seleção do modo
+      if (modo === 'auto') {
+        setModoSelecionado('automatico');
+        console.log("[Effect dadosSistema] Modo definido para: automatico");
+      } else if (modo === 'horario') { // API retorna 'horario' diretamente
+        setModoSelecionado('horario');
+        console.log("[Effect dadosSistema] Modo definido para: horario");
+      } else if (modo === 'manual') {
+        setModoSelecionado('manual');
+        console.log("[Effect dadosSistema] Modo definido para: manual");
+      } else {
+        console.warn(`[Effect dadosSistema] Modo da API ('${modo}') desconhecido. Usando 'automatico' como fallback.`);
+        setModoSelecionado('automatico');
+      }
 
+      // Preencher campos de luminosidade
       const minVal = l_min !== null ? String(Math.round(l_min * 100)) : '40';
       const maxVal = l_max !== null ? String(Math.round(l_max * 100)) : '70';
       setLuminosidadeMin(minVal);
       setLuminosidadeMax(maxVal);
       setUsarPadraoAuto(parseFloat(minVal) === 40 && parseFloat(maxVal) === 70);
+      console.log(`[Effect dadosSistema] Luminosidade: Min=${minVal}%, Max=${maxVal}%. UsarPadrão=${usarPadraoAuto}`);
 
-      // Função para formatar o horário da API para o input type="time" (HH:mm)
-      const formatTimeForInput = (timeFromApi) => {
-        if (typeof timeFromApi === 'string' && timeFromApi.match(/^\d{2}:\d{2}(:\d{2})?(\.\d{1,3})?$/)) {
-          return timeFromApi.substring(0, 5); // Pega apenas HH:mm para o input
-        }
-        console.warn(`[Effect dadosSistema] Formato de tempo inválido da API ou nulo: '${timeFromApi}'. Usando string vazia.`);
-        return ''; 
-      };
-      console.log(`[Effect dadosSistema] API h_inicio: '${h_inicio}', API h_fim: '${h_fim}'`);
-      setHorarioInicio(formatTimeForInput(h_inicio));
-      setHorarioTermino(formatTimeForInput(h_fim));
+      // 2. Converter segundos para HH:mm para os inputs de horário
+      console.log(`[Effect dadosSistema] API h_inicio (segundos): ${h_inicio}, API h_fim (segundos): ${h_fim}`);
+      const inicioHHMM = convertSecondsToHHMM(h_inicio);
+      const fimHHMM = convertSecondsToHHMM(h_fim);
+      setHorarioInicio(inicioHHMM);
+      setHorarioTermino(fimHHMM);
+      console.log(`[Effect dadosSistema] Inputs de Horário definidos para: Início=${inicioHHMM}, Fim=${fimHHMM}`);
       
     } else {
-      console.log("[Effect dadosSistema] dadosSistema é null, resetando formulário.");
+      console.log("[Effect dadosSistema] dadosSistema é null, resetando formulário para padrões.");
       setModoSelecionado('automatico');
       setLuminosidadeMin('40'); setLuminosidadeMax('70'); setUsarPadraoAuto(true);
       setHorarioInicio(''); setHorarioTermino('');
     }
-  }, [dadosSistema]);
+  }, [dadosSistema]); // Dependência mantida
 
   const handleModoChange = (novoModo) => {
+    console.log(`[handleModoChange] Modo alterado para: ${novoModo}`);
     setModoSelecionado(novoModo);
-    // Resetar/Preencher campos ao mudar de modo baseado nos dados atuais da API ou padrões
+    
     if (novoModo === 'automatico') {
         const min = dadosSistema?.modo === 'auto' && dadosSistema.l_min !== null ? String(Math.round(dadosSistema.l_min * 100)) : '40';
         const max = dadosSistema?.modo === 'auto' && dadosSistema.l_max !== null ? String(Math.round(dadosSistema.l_max * 100)) : '70';
         setLuminosidadeMin(min); setLuminosidadeMax(max);
         setUsarPadraoAuto(parseFloat(min) === 40 && parseFloat(max) === 70);
     } else if (novoModo === 'horario') {
-        const formatTimeForInput = (timeFromApi) => (typeof timeFromApi === 'string' && timeFromApi.match(/^\d{2}:\d{2}(:\d{2})?(\.\d{1,3})?$/) ? timeFromApi.substring(0, 5) : '');
-        setHorarioInicio(formatTimeForInput(dadosSistema?.modo === 'timer' ? dadosSistema.h_inicio : null));
-        setHorarioTermino(formatTimeForInput(dadosSistema?.modo === 'timer' ? dadosSistema.h_fim : null));
+        // Usa os valores de h_inicio/h_fim de dadosSistema (convertidos) se o modo na API era 'horario'
+        // Se não, usa string vazia.
+        setHorarioInicio(convertSecondsToHHMM(dadosSistema?.modo === 'horario' ? dadosSistema.h_inicio : null));
+        setHorarioTermino(convertSecondsToHHMM(dadosSistema?.modo === 'horario' ? dadosSistema.h_fim : null));
     }
   };
   
@@ -132,19 +157,18 @@ const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
   const handleConfirmar = async () => {
     console.log("[handleConfirmar] Iniciando.");
     let systemSpecificPayload = {
-      additionalProp1: {} // Adicionado conforme solicitado
+      additionalProp1: {}
     };
 
-    // Função para formatar o horário do estado (HH:mm) para HH:mm:ss para a API
     const formatTimeToHHMMSS_forAPI = (timeStr_HHMM) => {
       if (typeof timeStr_HHMM === 'string' && timeStr_HHMM.match(/^\d{2}:\d{2}$/)) {
-        return `${timeStr_HHMM}:00`; // Adiciona :00 para os segundos
+        return `${timeStr_HHMM}:00`;
       }
       if (typeof timeStr_HHMM === 'string' && timeStr_HHMM.match(/^\d{2}:\d{2}:\d{2}$/)) {
-        return timeStr_HHMM; // Já está no formato HH:mm:ss
+        return timeStr_HHMM; 
       }
       console.warn(`[handleConfirmar] Formato de tempo inválido para API: '${timeStr_HHMM}'. Enviando null.`);
-      return null; // Retorna null se o formato não for HH:mm
+      return null;
     };
 
     if (modoSelecionado === 'automatico') {
@@ -153,16 +177,16 @@ const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
         modo: 'auto',
         l_min: luminosidadeMin !== '' ? parseFloat(luminosidadeMin) / 100 : null,
         l_max: luminosidadeMax !== '' ? parseFloat(luminosidadeMax) / 100 : null,
-        h_inicio: null, 
-        h_fim: null     
+        h_inicio: 0, 
+        h_fim: 0     
       };
     } else if (modoSelecionado === 'horario') {
       console.warn("[handleConfirmar] Modo Horário: l_min e l_max estão sendo enviados conforme seu exemplo de payload. Verifique se a API os utiliza ou ignora neste modo.");
       systemSpecificPayload = {
         ...systemSpecificPayload,
-        modo: 'horario', // Enviando 'horario'
-        l_min: 0.7,     // Conforme seu exemplo de payload para POST
-        l_max: 0.4,     // Conforme seu exemplo de payload para POST (atenção: min > max)
+        modo: 'horario', 
+        l_min: 0.7,     
+        l_max: 0.4,     
         h_inicio: formatTimeToHHMMSS_forAPI(horarioInicio),
         h_fim: formatTimeToHHMMSS_forAPI(horarioTermino)
       };
@@ -196,7 +220,7 @@ const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
     let updateUrl = `http://56.125.35.215:8000/city/update/<username>/<validation_token>/<system_name>/<payload>?city_id=${bodyPayload.city_id}&user_name=${userNameForPath}&validation_hash=${validationHashForPath}&system_name=${systemNameForPath}&payload=${payloadSegmentForPath}`;
     const queryParams = new URLSearchParams({
       username: bodyPayload.user_name,
-      validation_hash: bodyPayload.validation_hash, // API de GET usa 'validation_token' como nome do query param
+      validation_hash: bodyPayload.validation_hash, 
       system_name: bodyPayload.system_name,
       payload: JSON.stringify(bodyPayload.payload)
     });
@@ -217,7 +241,7 @@ const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
       if (!response.ok) {
         const errorData = await response.json().catch(async () => ({ detail: [{ msg: await response.text() || `Erro HTTP ${response.status}` }] }));
         console.error("[handleConfirmar] Erro ao salvar (dados API):", errorData);
-        const errMsg = (errorData.detail && Array.isArray(errorData.detail) && errorData.detail.map(e => e.msg || JSON.stringify(e)).join('; ')) || `Erro ${response.status}`;
+        const errMsg = (errorData.detail && Array.isArray(errorData.detail) && errorData.detail.map(e => e.msg || JSON.stringify(e)).join('; ')) || `Erro ${response.statusText}`;
         throw new Error(errMsg);
       }
       
@@ -233,7 +257,7 @@ const IluminacaoController = ({ pontosIluminacao = [], cidadeSelecionada }) => {
     }
   };
   
-  // Restante do JSX (sem alterações em relação à última versão fornecida)
+  // Restante do JSX (sem alterações visuais aqui, apenas lógicas acima)
   return (
     <div className="flex h-screen font-sans bg-gray-100">
       <Sidebar activeItem="iluminacao" />
