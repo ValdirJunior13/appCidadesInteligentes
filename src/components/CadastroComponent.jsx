@@ -66,10 +66,6 @@ const CadastroComponent = () => {
       sameSite: 'Strict'
     });
 
-    Cookies.set('user_name', user.user_name, {  
-      expires: rememberMe ? 7 : 1,
-      path: '/'
-    });
 
     navigate("/paginaLogin", {
       state: { user }

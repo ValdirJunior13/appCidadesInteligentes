@@ -5,12 +5,16 @@ const Sidebar = ({ activeItem, cidadeAtual}) => {
 const navigate = useNavigate();
 const [isCollapsed, setIsCollapsed] = useState(false);
 
+
+
 const menuItems = [
+    { name: 'gerenciamentocidades', label: 'Inicio'},
     { name: 'irrigacao', label: 'Controle de irrigação' },
     { name: 'drenagem', label: 'Controle de drenagem' },
     { name: 'lixo', label: 'Controle de lixo' },
     { name: 'iluminacao', label: 'Controle de Iluminação' },
-    { name: 'configuracoes', label: 'Configurações da Cidade' }
+    { name: 'configuracoes', label: 'Configurações da Cidade' },
+    { name: 'paginaLogin', label: 'Página de selecão de cidade'}
 ];
 
 const handleNavigation = (itemName) => {
@@ -22,10 +26,6 @@ const handleNavigation = (itemName) => {
 };
 const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
-};
-
-const handleGoBack = () => {
-    navigate('/paginalogin'); 
 };
 
 return (
@@ -54,14 +54,7 @@ return (
         </button>
     ))}
 
-    {!isCollapsed && (
-        <button
-        onClick={handleGoBack}
-        className="text-left py-2 px-4 rounded-lg hover:underline mt-auto" 
-        >
-        Voltar
-        </button>
-    )}
+
     </aside>
 );
 };

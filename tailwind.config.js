@@ -68,5 +68,7 @@ export default {
     },
     },
     darkMode: 'class', // Suporte ao modo escuro
-    plugins: [],
+    plugins: [
+    'tailwind-scrollbar'
+  ],
 };
