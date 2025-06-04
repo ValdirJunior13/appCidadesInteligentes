@@ -81,12 +81,13 @@ const GerenciarCidadesComponent = () => {
   const [tempFiltrosMapa, setTempFiltrosMapa] = useState({
     iluminacao: true, irrigacao: true, drenagem: true, lixo: true
   });
+
   const [filtrosMapa, setFiltrosMapa] = useState({ ...tempFiltrosMapa });
 
   const [mapViewSettings, setMapViewSettings] = useState({
     key: Date.now(),
-    center: null, // Será populado pelas coordenadas originais ou geocodificadas
-    zoom: 4,      // Zoom inicial baixo, centralizado no Brasil
+    center: null, 
+    zoom: 4,      
     bounds: null,
   });
 
@@ -271,63 +272,102 @@ const GerenciarCidadesComponent = () => {
   }, [cityDetails]); // Re-executa se cityDetails mudar
 
   // useEffect para buscar pontos filtrados (já existente, com URL corrigida)
-  const buscarPontosFiltradosDaAPI = async () => {
-    if (!cityDetails || !cityDetails.id) {
+const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { // Novo parâmetro
+  // Validação inicial para cityDetails e obtenção do cityIdValue
+  let cityIdValue = cityDetails?.id;
+  if (!cityIdValue) {
+    const cityIdFromSession = sessionStorage.getItem('currentCityId');
+    if (cityIdFromSession) {
+      cityIdValue = cityIdFromSession;
+    } else {
       console.warn("buscarPontosFiltradosDaAPI: ID da cidade não disponível.");
-      return;
-    }
-    setIsLoadingPageData(true);
-    const sessionCityId = sessionStorage.getItem('currentCityId'); // Ou cityDetails.id
-    const currentUserName = Cookies.get("userName");
-    const currentValidationHash = Cookies.get("validation_hash");
-
-    if (!currentUserName || !currentValidationHash) {
-      alert("Sessão inválida. Faça login novamente.");
+      alert("ID da cidade não encontrado. Não é possível buscar pontos.");
       setIsLoadingPageData(false);
-      navigate("/login");
       return;
     }
+  }
+  
+  setIsLoadingPageData(true);
 
-    const baseApiUrl = `http://56.125.35.215:8000/city/get-data/`;
-    let apiUrlString;
-    try {
-        const queryParams = new URLSearchParams({
-            city_id: sessionCityId || cityDetails.id, // Usa o que estiver disponível
-            user_name: currentUserName,
-            validation_token: currentValidationHash,
-            list_filter: JSON.stringify(filtrosMapa)
-        });
-        apiUrlString = `${baseApiUrl}?${queryParams.toString()}`;
-    } catch (error) {
-        console.error("Erro ao construir URL para buscarPontosFiltrados:", error);
-        alert("Erro ao preparar requisição de filtros.");
-        setIsLoadingPageData(false);
-        return;
-    }
-    
-    console.log("URL API (buscarPontosFiltradosDaAPI):", apiUrlString);
+  const currentUserNameValue = Cookies.get("userName");
+  const currentValidationHashValue = Cookies.get("validation_hash");
 
-    try {
-      const response = await fetch(apiUrlString, {
-        method: "GET",
-        headers: { "Accept": "application/json" },
-      });
-      if (!response.ok) {
-        let errorBody = `Erro HTTP ${response.status} (${response.statusText})`;
-        try { const errorJson = await response.json(); errorBody = errorJson.detail || errorJson.message || JSON.stringify(errorJson); } catch (e) { try { errorBody = (await response.text()) || errorBody; } catch (textErr) {} }
-        throw new Error(`Falha ao buscar pontos filtrados: ${errorBody}`);
+  if (!currentUserNameValue || !currentValidationHashValue) {
+    alert("Sessão inválida. Faça login novamente.");
+    setIsLoadingPageData(false);
+    navigate("/login");
+    return;
+  }
+
+  // Usa o argumento 'filtrosParaUsarNaAPI' se fornecido, senão usa o estado 'filtrosMapa'
+  const listFilterObject = filtrosParaUsarNaAPI || filtrosMapa; 
+  const listFilterStringValue = JSON.stringify(listFilterObject);
+
+  if (listFilterStringValue === undefined) {
+    console.error("Erro: Objeto de filtros resultou em listFilterStringValue indefinido. Objeto:", listFilterObject);
+    alert("Erro ao preparar requisição de filtros: objeto de filtros inválido.");
+    setIsLoadingPageData(false);
+    return;
+  }
+
+  let apiUrlString;
+
+  try {
+    const encodedCityId = encodeURIComponent(cityIdValue);
+    const encodedCurrentUserName = encodeURIComponent(currentUserNameValue);
+    const encodedCurrentValidationHash = encodeURIComponent(currentValidationHashValue);
+    const encodedListFilterString = encodeURIComponent(listFilterStringValue);
+
+    apiUrlString = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>/<list-filter>?city_id=${encodeURIComponent(encodedCityId)}&user_name=${encodeURIComponent(encodedCurrentUserName)}&validation_token=${encodeURIComponent(encodedCurrentValidationHash)}&list_filter=${encodeURIComponent(encodedListFilterString)}`;
+
+  } catch (error) {
+    console.error("Erro ao construir URL para buscarPontosFiltrados:", error);
+    alert("Erro ao preparar requisição de filtros. Verifique os dados de entrada.");
+    setIsLoadingPageData(false);
+    return;
+  }
+
+  // Adicionado log para ver o objeto de filtros que está sendo stringificado
+  console.log("Objeto de filtros usado para a API:", listFilterObject);
+  console.log("URL API (buscarPontosFiltradosDaAPI):", apiUrlString);
+
+  try {
+    const response = await fetch(apiUrlString, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+    });
+
+    if (!response.ok) {
+      let errorBody = `Erro HTTP ${response.status} (${response.statusText})`;
+      let errorDetail = null;
+      try {
+        const errorJson = await response.json();
+        errorDetail = errorJson.detail || errorJson.message || JSON.stringify(errorJson);
+        errorBody = `Falha ao buscar pontos filtrados: ${errorDetail}`;
+      } catch (e) {
+        try {
+          const rawText = await response.text();
+          errorDetail = rawText || `Resposta não-JSON: ${response.statusText}`;
+          errorBody = `Falha ao buscar pontos filtrados: ${errorDetail}`;
+        } catch (textErr) { /* Mantém o errorBody original se tudo falhar */ }
       }
-      const dadosFiltrados = await response.json();
-      console.log("Dados brutos dos pontos filtrados recebidos:", JSON.stringify(dadosFiltrados, null, 2));
-      setPontosFiltrados(Array.isArray(dadosFiltrados) ? dadosFiltrados : []);
-    } catch (error) {
-      console.error("Erro em buscarPontosFiltradosDaAPI:", error.message);
-      alert(error.message);
-      setPontosFiltrados([]);
-    } finally {
-      setIsLoadingPageData(false);
+      console.error("Detalhe do erro da API:", errorDetail || "Não foi possível obter detalhes do erro da API.");
+      throw new Error(errorBody);
     }
-  };
+
+    const dadosFiltrados = await response.json();
+    console.log("Dados brutos dos pontos filtrados recebidos:", JSON.stringify(dadosFiltrados, null, 2));
+    setPontosFiltrados(Array.isArray(dadosFiltrados) ? dadosFiltrados : []);
+
+  } catch (error) {
+    console.error("Erro em buscarPontosFiltradosDaAPI:", error.message);
+    alert(`Erro na comunicação com o servidor: ${error.message}`);
+    setPontosFiltrados([]);
+  } finally {
+    setIsLoadingPageData(false);
+  }
+};
+
   
   // useEffect para filtrar pontos localmente (já existente)
   useEffect(() => {
@@ -348,10 +388,11 @@ const GerenciarCidadesComponent = () => {
   const handleTempFiltroChange = (categoria) => {
     setTempFiltrosMapa(prev => ({...prev, [categoria]: !prev[categoria] }));
   };
-  const confirmarFiltros = () => {
-    setFiltrosMapa({ ...tempFiltrosMapa });
-    buscarPontosFiltradosDaAPI();
-  };
+const confirmarFiltros = () => {
+  const filtrosAtuais = { ...tempFiltrosMapa }; // Captura o estado atual de tempFiltrosMapa
+  setFiltrosMapa(filtrosAtuais); // Atualiza o estado principal 'filtrosMapa' (para UI e consistência)
+  buscarPontosFiltradosDaAPI(filtrosAtuais); // Passa os filtros atuais diretamente para a função da API
+};
 
   // Lógica de Renderização Condicional
   if (loadingAuth) {
@@ -456,8 +497,11 @@ const GerenciarCidadesComponent = () => {
                       <MapViewControl center={mapViewSettings.center} zoom={mapViewSettings.zoom} bounds={mapViewSettings.bounds}/>
                       
                       {cityCoordinatesAreValid && (
-                        <Marker position={cityDetails.coordenadas.map(c => parseFloat(c))} icon={customIcon}>
-                          <Popup>{cityDetails.name} ({cityDetails.cidade}, {cityDetails.estado})</Popup>
+                        <Marker 
+                        position={cityDetails.coordenadas.map(c => parseFloat(c))} 
+                        icon={customIcon}
+                        >
+                        <Popup>{cityDetails.name} ({cityDetails.cidade}, {cityDetails.estado})</Popup>
                         </Marker>
                       )}
 

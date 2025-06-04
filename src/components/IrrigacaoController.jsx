@@ -2,10 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import Sidebar from './Sidebar'; // Certifique-se que o caminho está correto
-import Cookies from 'js-cookie'; // Importar js-cookie
+import Sidebar from './Sidebar'; 
+import Cookies from 'js-cookie'; 
 
-// Ícones dos marcadores Leaflet (mantido como no original)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -13,7 +12,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-// Funções auxiliares de conversão (mantidas como antes)
 const secondsToHHMM = (totalSeconds) => {
   if (typeof totalSeconds !== 'number' || isNaN(totalSeconds)) return "00:00";
   const hours = Math.floor(totalSeconds / 3600);
@@ -58,7 +56,7 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
 
   const [horarioInicio, setHorarioInicio] = useState('08:00');
   const [tempoFuncionamentoHorario, setTempoFuncionamentoHorario] = useState('30');
-  const [repetirHorario, setRepetirHorario] = useState('sim'); // 'sim' ou 'nao'
+  const [repetirHorario, setRepetirHorario] = useState('sim'); 
 
   const [loading, setLoading] = useState(false);
   const [dadosSistema, setDadosSistema] = useState(null);
@@ -103,7 +101,7 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
             setUsarPadraoAutomatico(false); 
             setUmidadeMinima(decimalToPercentageString(data.u_min));
             setTempoFuncionamentoAutomatico(secondsToMinutesString(data.t_funcionamento_a || data.t_funcionamento_h || 0));
-        } else { // Resetar para defaults do front se não for modo automático vindo da API ou se for outro modo
+        } else { 
             setUsarPadraoAutomatico(true);
             setUmidadeMinima('30');
             setTempoFuncionamentoAutomatico('10');
@@ -112,10 +110,9 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
         setHorarioInicio(secondsToHHMM(data.h_inicio));
         setTempoFuncionamentoHorario(secondsToMinutesString(data.t_funcionamento_h));
         
-        // Simplificado para 'sim' ou 'nao'
-        if (data.repetir === 1) { // Assumindo que repetir: 1 significa repetir diariamente (periodo pode ser 24 ou implícito)
+        if (data.repetir === 1) { 
             setRepetirHorario('sim');
-        } else { // data.repetir === 0 ou qualquer outro valor
+        } else { 
             setRepetirHorario('nao');
         }
       }
@@ -142,7 +139,7 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
     if (!userName || !validationHash || !cityId) {
         alert("Erro: Informações de autenticação ou ID da cidade ausentes. Não é possível salvar.");
         console.error("[postSystemData] ERRO: user_name, validation_hash ou city_id ausentes.");
-        setLoading(false); // Adicionado para garantir que o loading seja desativado
+        setLoading(false); 
         return;
     }
 
@@ -150,18 +147,16 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
       user_name: userName,
       validation_hash: validationHash,
       city_id: cityId,
-      system_name: "irrigacao", // Mantendo "irrigacao" conforme o sistema
+      system_name: "irrigacao", 
       payload: systemSpecificPayload
     };
 
-    // Estas são as variáveis que DEVEM substituir os placeholders no path.
+ 
     const userNameForPath = encodeURIComponent(userName);
-    const validationHashForPath = encodeURIComponent(validationHash); // Hashes podem conter caracteres especiais
+    const validationHashForPath = encodeURIComponent(validationHash); 
     const systemNameForPath = encodeURIComponent("irrigacao"); 
 
-    // CORREÇÃO DA URL:
-    // Removido o placeholder <payload> do path.
-    // Removido o query param `&payload=...`
+
     let updateUrl = `http://56.125.35.215:8000/city/update/<username>/<validation_token>/<system_name>/<payload>?city_id=${bodyPayload.city_id}&user_name=${userNameForPath}&validation_hash=${validationHashForPath}&system_name=${systemNameForPath}&payload=${systemNameForPath}`;
 
 
@@ -182,16 +177,14 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
         let errorTextDetail = `Erro HTTP ${response.status} (${response.statusText})`;
         try {
             errorData = await response.json();
-            // Se o backend envia { detail: "mensagem" }
             if (errorData && errorData.detail) {
                 errorTextDetail = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail);
-            } else if (typeof errorData === 'string') { // Se for uma string simples de erro
+            } else if (typeof errorData === 'string') { 
                 errorTextDetail = errorData;
             }
         } catch (e) {
-            // Se a resposta não for JSON válido, tenta pegar como texto.
             const rawErrorText = await response.text();
-            errorTextDetail = rawErrorText || errorTextDetail; // Usa o texto cru se disponível
+            errorTextDetail = rawErrorText || errorTextDetail; 
         }
         console.error("[postSystemData] Erro ao salvar (dados API):", errorData || errorTextDetail);
         throw new Error(errorTextDetail);
@@ -214,12 +207,10 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
 
     if (modo === 'automatico') {
       if (usarPadraoAutomatico) {
-        // Se "Padrão" significa enviar valores default específicos para o backend:
         systemSpecificPayload = {
-          modo: "automatico",
-          u_min: percentageStringToDecimal('30'), // Valor padrão do frontend
-          // u_max: ???
-          t_funcionamento_a: minutesStringToSeconds('10') // Valor padrão do frontend
+          modo: "auto",
+          u_min: percentageStringToDecimal('30'), 
+          t_funcionamento_a: minutesStringToSeconds('10') 
         };
       } else {
         systemSpecificPayload = {
@@ -235,7 +226,7 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
         h_inicio: HHMMToSeconds(horarioInicio),
         t_funcionamento_h: minutesStringToSeconds(tempoFuncionamentoHorario),
         repetir: repetirHorario === 'sim' ? 1 : 0,
-        periodo: repetirHorario === 'sim' ? 24 : 0 // Se 'sim', período é 24h. Se 'não', período é 0 ou irrelevante.
+        periodo: repetirHorario === 'sim' ? 24 : 0
       };
     } else if (modo === 'manual') {
       systemSpecificPayload = {
@@ -260,7 +251,6 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
 
   const handleModoChange = (novoModo) => {
     setModo(novoModo);
-    // Ao mudar o modo, resetar os valores do modo automático para o padrão se não for o modo atual
     if (novoModo !== 'automatico' && !usarPadraoAutomatico) {
         // setUsarPadraoAutomatico(true); // Opcional: forçar 'Padrão' ao sair do modo auto
         // setUmidadeMinima('30');
