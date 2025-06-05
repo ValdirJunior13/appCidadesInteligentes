@@ -35,7 +35,38 @@ const App = () => {
                             </WithFullHeader>
                         }
                     />
-                    
+                    <Route
+                path="/hidrico"
+                element={
+                    <WithFullHeader>
+                    <Hidrico />
+                    </WithFullHeader>
+                }
+                />
+            <Route
+            path="/lixo"
+            element={
+            <WithFullHeader>
+                <Lixo />
+            </WithFullHeader>
+        }
+    />
+    <Route
+        path="/iluminacaoinicio"
+        element={
+            <WithFullHeader>
+                <Iluminacao />
+            </WithFullHeader>
+        }
+    />
+    <Route
+        path="/data"
+        element={
+            <WithFullHeader>
+                <Data />
+            </WithFullHeader>
+        }
+    />
                     <Route
                         path="/login"
                         element={
@@ -68,38 +99,6 @@ const App = () => {
             <Route path = "/irrigacao" element={<IrrigacaoControl />} />
             <Route path = "/configuracoes" element = {<ConfiguracaoComponent />} />
 
-            <Route
-                path="/hidrico"
-                element={
-                    <WithFullHeader>
-                    <Hidrico />
-                    </WithFullHeader>
-                }
-                />
-            <Route
-            path="/lixo"
-            element={
-            <WithFullHeader>
-                <Lixo />
-            </WithFullHeader>
-        }
-    />
-    <Route
-        path="/iluminacaoinicio"
-        element={
-            <WithFullHeader>
-                <Iluminacao />
-            </WithFullHeader>
-        }
-    />
-    <Route
-        path="/data"
-        element={
-            <WithFullHeader>
-                <Data />
-            </WithFullHeader>
-        }
-    />
     <Route
         path="/paginalogin"
         element={
