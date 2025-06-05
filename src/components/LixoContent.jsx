@@ -3,14 +3,14 @@ import InformacoesSecundarias from "./InformacoesSecundarias";
 
 const LixoContent = () => {
     return (
-        <main className="w-full container mx-auto p-6 bg-[#d9d9d9] min-h-screen">
+        <main className="w-full container mx-auto p-6 bg-blue-50 min-h-screen">
             <section className="text-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">
                     Nossos Recursos para Gerenciamento de Resíduos Sólidos
                 </h1>
             </section>
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 bg-[#ffffff]">
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 bg-blue-50">
                 <Quadrado 
                     imagem="../src/assets/images/recycle-bin.png" 
                     alt="Coleta Inteligente" 

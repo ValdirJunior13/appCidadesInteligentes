@@ -256,7 +256,7 @@ const DrenagemController = ({ pontosDrenagem = [], cidadeSelecionada }) => {
     <div className="flex h-screen font-sans bg-gray-100"> {/* Fundo geral cinza claro */}
       <Sidebar activeItem="drenagem" />
       {/* Conteúdo Principal com fundo amarelo */}
-      <main className="flex-1 bg-yellow-400 p-4 md:p-6 lg:p-8 overflow-y-auto">
+      <main className="flex-1 bg-blue-50  p-4 md:p-6 lg:p-8 overflow-y-auto">
         {loading && (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
                 {/* Spinner com borda amarela */}

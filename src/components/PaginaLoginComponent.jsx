@@ -156,7 +156,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
     setShowNotificationsPanel(false);
   };
 
-  // FUNÇÃO PARA BUSCAR ESTADOS (UFs) COM LOGS DE DEBUG
+
  const fetchAllGeoStates = async () => {
     setLoadingStates(true);
     console.log("fetchAllGeoStates: Iniciando busca de estados...");
@@ -325,9 +325,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
             state: novoEndereco.state,
             city: novoEndereco.city,
             validation_hash: Cookies.get("validation_hash"),
-            // Se a API /create-city espera 'latitude' e 'longitude', você precisa enviar novoEndereco.coordenadas[0] e novoEndereco.coordenadas[1]
-            // Ex: latitude: novoEndereco.coordenadas[0], longitude: novoEndereco.coordenadas[1]
-          }),
+            }),
         });
         console.log("testando se é estado ou uf", novoEndereco.state);
         
@@ -338,20 +336,12 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
         const data = await response.json();
         localStorage.setItem(`ultimaCidadeCriada_${novoEndereco.user_name}`, data.id);
         
-        // const novaCidadeParaLista = { // Ajuste conforme os dados retornados e necessários na lista
-        //   id: data.id, 
-        //   city_name: novoEndereco.name, 
-        //   city: novoEndereco.city,
-        //   state: novoEndereco.state,
-        // };
-        // setCitys((prevCitys) => [...prevCitys, novaCidadeParaLista]); // Adiciona à lista local
-
         setNovoEndereco({ user_name: Cookies.get("userName"), name: "", state: "", city: "", coordenadas: null });
-        setCitiesForSelectedState([]); // Limpa o select de cidades
-        setAllAvailableStates([]); // Opcional: recarregar estados ou não, dependendo da UX
+        setCitiesForSelectedState([]);
+        setAllAvailableStates([]); 
         setMostrarFormulario(false);
         alert("Cidade adicionada com sucesso!");
-        buscarCidades(); // Rebusca a lista de cidades do usuário do backend
+        buscarCidades(); 
       } catch (error) {
         console.error("Erro ao adicionar cidade:", error);
         alert(`Erro ao criar cidade: ${error.message}`);
@@ -477,6 +467,26 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
     return <div className="flex justify-center items-center min-h-screen">Carregando autenticação...</div>;
   }
 
+  const imagensDisponiveisParaCidades = [
+  "../src/assets/images/cidade_1.png", // Sua imagem atual
+  "../src/assets/images/cidade_2.png",      // Adicione mais caminhos
+  "../src/assets/images/cidade_3.png",
+  "../src/assets/images/cidade_4.png",
+  "../src/assets/images/cidade_5.png",
+  "../src/assets/images/cidade_6.png",
+  "../src/assets/images/cidade_7.png",
+  "../src/assets/images/cidade_8.png"
+  // Adicione quantos caminhos de imagem você tiver
+];
+
+const getImagemAleatoria = () => {
+  if (imagensDisponiveisParaCidades.length === 0) {
+    return "../src/assets/images/city-buildings-svgrepo-com.svg"; // Fallback se a lista estiver vazia
+  }
+  const indiceAleatorio = Math.floor(Math.random() * imagensDisponiveisParaCidades.length);
+  return imagensDisponiveisParaCidades[indiceAleatorio];
+};
+
 return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Cabeçalho */}
@@ -498,7 +508,7 @@ return (
             {showNotificationsPanel && (
             <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl z-50 border border-gray-200 overflow-hidden animate-fade-in-down">
                 <div className="p-3 border-b border-gray-100"> <h3 className="text-base font-semibold text-gray-800">Notificações</h3> </div>
-                <div className="max-h-80 overflow-y-auto"> {/* Se quiser scrollbar customizada aqui, adicione a classe e o CSS do plugin */}
+                <div className="max-h-80 overflow-y-auto"> 
                 {invitations.length > 0 ? (
                     invitations.map((notification) => (
                     <div key={notification.id} className={`border-b border-gray-50 last:border-b-0 ${selectedNotificationId === notification.id ? 'bg-indigo-50' : ''}`}>
@@ -538,7 +548,6 @@ return (
                 <div className="py-1"><button onClick={handleLogoutClick} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"> <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> <span>Sair</span></button></div>
             </div>
             )}
-             {/* Modal de Dados do Usuário */}
             {showUserInfoModal && userInfoData && (
             <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-8 z-[100] transition-opacity duration-300 ease-in-out">
                 <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-xl transform transition-all duration-300 ease-in-out animate-fade-in-down border border-gray-200 overflow-hidden">
@@ -548,10 +557,6 @@ return (
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
-                    {/* Para scrollbar customizada aqui com Tailwind, você usaria um plugin como tailwind-scrollbar e adicionaria classes como:
-                        scrollbar scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-500
-                        Caso contrário, a barra de rolagem padrão do navegador será usada.
-                    */}
                     <div className="space-y-3 text-sm max-h-[60vh] overflow-y-auto pr-3"> 
                         { console.log("Dados efetivamente no MODAL UserInfo:", userInfoData) }
                         {userInfoData && Object.entries(userInfoData).map(([key, value]) => (
@@ -604,7 +609,7 @@ return (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {citys.map((local) => (
               <div key={local.id} onClick={() => handleCityClick(local)} className="cursor-pointer transition transform hover:scale-[1.02] active:scale-95">
-                <Quadrado imagem="../src/assets/images/city-buildings-svgrepo-com.svg" titulo={local.city_name || local.name} descricao={`${local.city}, ${local.state}`} />
+                <Quadrado imagem={getImagemAleatoria()} titulo={local.city_name || local.name} descricao={`${local.city}, ${local.state}`} />
               </div>
             ))}
           </div>

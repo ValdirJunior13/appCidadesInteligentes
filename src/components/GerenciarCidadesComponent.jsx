@@ -450,7 +450,7 @@ const confirmarFiltros = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-blue-50">
           {cityDetails && (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

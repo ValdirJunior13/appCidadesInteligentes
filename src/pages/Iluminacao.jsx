@@ -2,7 +2,7 @@ import IluminacaoContent from '../components/IluminacaoContent';
 
 const Iluminacao = () => {
     return (
-        <div className="min-h-screen bg-[#DDDDDD] flex justify-center items-center">
+        <div className="min-h-screen bg-blue-50">
             <IluminacaoContent/>
         </div>
     );

@@ -3,9 +3,10 @@ import PropTypes from "prop-types";
 
 const Quadrado = ({ imagem, alt, titulo, descricao }) => {
   return (
-    <div className="p-6 border rounded-lg flex flex-col items-center text-center transition-colors duration-300 hover:bg-[#ffe999] hover:text-black relative bg-[#ffffff">
+    <div className="p-6 border rounded-lg flex flex-col items-center text-center transition-colors duration-300 hover:bg-[#ffe999] hover:text-black relative bg-blue-50">
+
     
-      <div className="w-28 h-28 bg-[#ffd952] rounded-full flex items-center justify-center">
+      <div className="w-28 h-28 bg-blue-200 rounded-full flex items-center justify-center">
       
         {imagem ? (
           <img

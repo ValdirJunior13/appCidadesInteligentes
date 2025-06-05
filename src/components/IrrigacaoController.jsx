@@ -262,7 +262,7 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
     return (
       <div className="flex h-screen font-sans">
         <Sidebar activeItem="irrigacao" />
-        <main className="flex-1 bg-yellow-400 p-6 flex justify-center items-center">
+        <main className="flex-1 bg-blue-50 p-6 flex justify-center items-center">
           <p className="text-xl text-black">Carregando dados do sistema...</p>
         </main>
       </div>
@@ -273,7 +273,7 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
     <div className="flex h-screen font-sans">
       <Sidebar activeItem="irrigacao" />
       
-      <main className="flex-1 bg-yellow-400 p-6 overflow-y-auto">
+      <main className="flex-1 bg-blue-50 p-6 overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-black">Controle de irrigação</h1>
         </div>
