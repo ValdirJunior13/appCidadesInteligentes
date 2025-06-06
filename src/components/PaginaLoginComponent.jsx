@@ -479,13 +479,27 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
   // Adicione quantos caminhos de imagem você tiver
 ];
 
-const getImagemAleatoria = () => {
-  if (imagensDisponiveisParaCidades.length === 0) {
-    return "../src/assets/images/city-buildings-svgrepo-com.svg"; // Fallback se a lista estiver vazia
+const getImagemParaCidade = (cityId) => {
+  if (!cityId) {
+    // Retorna uma imagem padrão se o ID for inválido
+    return "../src/assets/images/city-buildings-svgrepo-com.svg";
   }
-  const indiceAleatorio = Math.floor(Math.random() * imagensDisponiveisParaCidades.length);
-  return imagensDisponiveisParaCidades[indiceAleatorio];
-};
+  
+  // Converte o ID (que pode ser string) em um número "hash" simples
+  let hash = 0;
+  // Se o ID já for um número, usa ele. Se for string, calcula um hash.
+  if (typeof cityId === 'string') {
+    for (let i = 0; i < cityId.length; i++) {
+      hash += cityId.charCodeAt(i);
+    }
+  } else if (typeof cityId === 'number') {
+    hash = cityId;
+  }
+
+  // O operador de módulo (%) garante que o índice sempre estará dentro dos limites do array
+  const indice = hash % imagensDisponiveisParaCidades.length;
+  return imagensDisponiveisParaCidades[indice];
+}
 
 return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -606,13 +620,15 @@ return (
         {loading && citys.length === 0 && !mostrarFormulario ? (
           <div className="text-center py-10"><p className="text-gray-500 text-lg">Carregando suas cidades...</p></div>
         ) : citys.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {citys.map((local) => (
-              <div key={local.id} onClick={() => handleCityClick(local)} className="cursor-pointer transition transform hover:scale-[1.02] active:scale-95">
-                <Quadrado imagem={getImagemAleatoria()} titulo={local.city_name || local.name} descricao={`${local.city}, ${local.state}`} />
-              </div>
-            ))}
-          </div>
+          // Encontre este trecho no seu return
+<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  {citys.map((local) => (
+    <div key={local.id} onClick={() => handleCityClick(local)} className="cursor-pointer transition transform hover:scale-[1.02] active:scale-95">
+      {/* ATUALIZE AQUI: Chame a nova função com o ID da cidade */}
+      <Quadrado imagem={getImagemParaCidade(local.id)} titulo={local.city_name || local.name} descricao={`${local.city}, ${local.state}`} />
+    </div>
+  ))}
+</div>
         ) : (
           !mostrarFormulario && (
             <div className="bg-white rounded-2xl shadow-sm p-8 text-center border-2 border-dashed border-gray-200">

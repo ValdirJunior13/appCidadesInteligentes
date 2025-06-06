@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 const Sidebar = ({ activeItem, cidadeAtual}) => {
 const navigate = useNavigate();
@@ -59,4 +60,8 @@ return (
 );
 };
 
+Sidebar.propTypes = {
+  activeItem: PropTypes.string,
+  cidadeAtual: PropTypes.object
+};
 export default Sidebar;

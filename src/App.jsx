@@ -23,6 +23,7 @@ import ConfiguracaoComponent from "./pages/ConfiguracaoComponent";
 
 
 const App = () => {
+
     return (
         <AuthProvider>
             <Router>

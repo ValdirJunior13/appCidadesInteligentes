@@ -548,15 +548,21 @@ const confirmarFiltros = () => {
               <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
                 <h2 className="text-xl font-semibold text-gray-700 mb-4">Estatísticas Gerais</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {Object.entries(filtrosMapa).map(([categoria, ativo]) => (
-                    ativo && (
-                      <div key={categoria} className={`p-4 rounded-lg shadow ${categoria === "iluminacao" ? "bg-yellow-100 text-yellow-700" : categoria === "drenagem" ? "bg-blue-100 text-blue-700" : categoria === "lixo" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>
-                        <p className="text-sm capitalize font-medium">{categoria.replace("_", " ")}</p>
-                        <p className="font-bold text-2xl">{pontosFiltrados?.filter(p => checkCoordinatesValidity(p))?.length || 0}</p>
-                      </div>
-                    )
-                  ))}
-                </div>
+  {Object.entries(filtrosMapa).map(([categoria, ativo]) => {
+    // Para cada categoria, filtramos e contamos os dispositivos correspondentes
+    const count = Object.values(cityDevices).filter(device => device.tipo_sistema === categoria).length;
+
+    return (
+      ativo && (
+        <div key={categoria} className={`p-4 rounded-lg shadow ${categoria === "iluminacao" ? "bg-yellow-100 text-yellow-700" : categoria === "drenagem" ? "bg-blue-100 text-blue-700" : categoria === "lixo" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>
+          <p className="text-sm capitalize font-medium">{categoria.replace("_", " ")}</p>
+          {/* Usamos a nova variável 'count' para exibir a contagem correta */}
+          <p className="font-bold text-2xl">{count}</p>
+        </div>
+      )
+    );
+  })}
+</div>
               </section>
 
               {categoriaSelecionada && (

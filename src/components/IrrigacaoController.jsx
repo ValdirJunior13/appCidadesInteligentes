@@ -252,9 +252,7 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
   const handleModoChange = (novoModo) => {
     setModo(novoModo);
     if (novoModo !== 'automatico' && !usarPadraoAutomatico) {
-        // setUsarPadraoAutomatico(true); // Opcional: forçar 'Padrão' ao sair do modo auto
-        // setUmidadeMinima('30');
-        // setTempoFuncionamentoAutomatico('10');
+
     }
   };
 
