@@ -10,7 +10,7 @@ const ConfiguracaoCidade = () => {
   const location = useLocation();
   const cidadeAtual = location.state;
   const [invitations, setInvitations] = useState([]);
-  const [dadosSistema, setDadosSistema] = useState(null); // Estado para armazenar os dados do sistema
+  const [dadosSistema, setDadosSistema] = useState(null); 
 
   const [gerentes, setGerentes] = useState([
     { nome: '', cargo: '', id: '' },
@@ -98,7 +98,7 @@ const ConfiguracaoCidade = () => {
   const sistemaData = async () => {
     if (
       systemData.user_name &&
-      systemData.city_id && // Presumo que city_id será adicionado a systemData em algum momento se necessário
+      systemData.city_id && 
       systemData.validation_hash &&
       systemData.system_name &&
       systemData.payload
@@ -106,7 +106,7 @@ const ConfiguracaoCidade = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `http://city/update/${systemData.user_name}/${systemData.validation_hash}/${systemData.system_name}/${systemData.payload}`, // URL placeholder, ajuste conforme necessário
+          `http://56.125.35.215:8000/city/update/<username>/<validation_token>/<system_name>/<payload>?username=${systemData.user_name}&validation_token=${systemData.validation_hash}&system_name?${systemData.system_name}&payload=${systemData.payload}`, 
           {
             method: "POST",
             headers: {
@@ -137,69 +137,67 @@ const ConfiguracaoCidade = () => {
   };
 
 const getSistemaData = async () => {
-  console.log("[getSistemaData] INICIANDO execução da função."); // LOG A (este você já tem)
+  console.log("[getSistemaData] INICIANDO execução da função."); 
   try {
     setLoading(true);
 
     const sessionCityId = sessionStorage.getItem('currentCityId');
-    console.log("[getSistemaData] Valor bruto de sessionCityId:", sessionCityId); // LOG B
+    console.log("[getSistemaData] Valor bruto de sessionCityId:", sessionCityId); 
     if (!sessionCityId) {
       console.error("[getSistemaData] ERRO: ID da cidade não encontrado no sessionStorage.");
       throw new Error("ID da cidade não encontrado no sessionStorage");
     }
-    console.log("[getSistemaData] ID da Cidade (após verificação):", sessionCityId); // Este você já tem
+    console.log("[getSistemaData] ID da Cidade (após verificação):", sessionCityId); 
 
     const usernameCookie = Cookies.get("userName");
-    console.log("[getSistemaData] Valor bruto de usernameCookie:", usernameCookie); // LOG C
+    console.log("[getSistemaData] Valor bruto de usernameCookie:", usernameCookie); 
     if (!usernameCookie) {
       console.error("[getSistemaData] ERRO: Nome de usuário não encontrado nos cookies.");
       throw new Error("Nome de usuário não encontrado nos cookies");
     }
-    console.log("[getSistemaData] Usuário (após verificação):", usernameCookie); // Este você já tem
+    console.log("[getSistemaData] Usuário (após verificação):", usernameCookie);
 
     const validationToken = Cookies.get('validationToken');
-    console.log("[getSistemaData] Valor bruto de validationToken:", validationToken); // LOG D
+    console.log("[getSistemaData] Valor bruto de validationToken:", validationToken); 
     if (!validationToken) {
       console.error("[getSistemaData] ERRO: Token de validação ('validationToken') não encontrado nos cookies.");
       throw new Error("Token de validação ('validationToken') ausente");
     }
-    console.log("[getSistemaData] Token de Validação (após verificação):", validationToken); // Este você já tem
+    console.log("[getSistemaData] Token de Validação (após verificação):", validationToken); 
 
     const apiUrl = `http://56.125.35.215:8000/city/get-system-data/<city_id>/<username>/<validation_token>/<system_name>?city_id=${sessionCityId}&user_name=${usernameCookie}&validation_token=${validationToken}&system_name=drenagem`;
-    console.log("[getSistemaData] URL da API a ser chamada:", apiUrl); // LOG E (este você já tem)
+    console.log("[getSistemaData] URL da API a ser chamada:", apiUrl); 
 
-    console.log("[getSistemaData] PREPARANDO para fazer a chamada fetch..."); // LOG F
+    console.log("[getSistemaData] PREPARANDO para fazer a chamada fetch..."); 
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         "Accept": "application/json",
       },
     });
-    console.log("[getSistemaData] CHAMADA fetch REALIZADA."); // LOG G
-    console.log("[getSistemaData] Resposta da API - Status:", response.status, "Ok:", response.ok); // LOG H (Adicionado na sugestão anterior)
-
+    console.log("[getSistemaData] CHAMADA fetch REALIZADA."); 
+    console.log("[getSistemaData] Resposta da API - Status:", response.status, "Ok:", response.ok); 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[getSistemaData] ERRO na requisição: ${response.status} - ${response.statusText}. Resposta do servidor: ${errorText}`);
       throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}. Detalhes: ${errorText}`);
     }
 
-    console.log("[getSistemaData] PREPARANDO para converter resposta para JSON..."); // LOG I
-    const data = await response.json();
-    console.log("[getSistemaData] RESPOSTA CONVERTIDA para JSON."); // LOG J
-    console.log("[getSistemaData] Dados brutos recebidos da API (JSON):", JSON.stringify(data, null, 2)); // LOG K (este você já tem e é crucial)
+    console.log("[getSistemaData] PREPARANDO para converter resposta para JSON..."); 
+    console.log("[getSistemaData] RESPOSTA CONVERTIDA para JSON."); 
+    console.log("[getSistemaData] Dados brutos recebidos da API (JSON):", JSON.stringify(data, null, 2)); 
     
     setDadosSistema(data);
-    console.log("[getSistemaData] Estado 'dadosSistema' atualizado com:", JSON.stringify(data, null, 2)); // LOG L (este você já tem)
+    console.log("[getSistemaData] Estado 'dadosSistema' atualizado com:", JSON.stringify(data, null, 2)); 
     
     return data;
 
   } catch (error) {
-    console.error("[getSistemaData] ERRO CAPTURADO no bloco catch:", error.message); // LOG M
+    console.error("[getSistemaData] ERRO CAPTURADO no bloco catch:", error.message); 
     setDadosSistema(null);
   } finally {
     setLoading(false);
-    console.log("[getSistemaData] FINALIZANDO execução da função (bloco finally)."); // LOG N (este você já tem)
+    console.log("[getSistemaData] FINALIZANDO execução da função (bloco finally)."); 
   }
 };
 
@@ -212,7 +210,7 @@ const getSistemaData = async () => {
       console.log("ID da Cidade (fetchCityManagers):", sessionCityId);
 
       const usernameCookie = Cookies.get("userName");
-      const validationHash = Cookies.get("validation_hash"); // Corrigido para validation_hash se for o caso
+      const validationHash = Cookies.get("validation_hash"); 
       if (!usernameCookie || !validationHash) throw new Error("Usuário não autenticado (fetchCityManagers)");
       console.log("Usuário (fetchCityManagers):", usernameCookie);
       console.log("Validation Hash (fetchCityManagers):", validationHash);
@@ -237,7 +235,7 @@ const getSistemaData = async () => {
       const mappedManagers = Object.entries(managersDataFromApi).map(([id, managerDetails]) => ({
         id: id,
         nome: managerDetails.username,
-        cargo: managerDetails.sistema, // Ou `Gerente de ${managerDetails.sistema}`
+        cargo: managerDetails.sistema, 
       }));
 
       console.log("Gerentes mapeados para o estado (fetchCityManagers):", mappedManagers);
@@ -258,7 +256,7 @@ const getSistemaData = async () => {
     try {
       setLoading(true);
       const sessionCityId = sessionStorage.getItem('currentCityId');
-      if (!sessionCityId) throw new Error("ID da cidade não encontrado no sessionStorage (getConectionKey)"); // corrigido para sessionStorage
+      if (!sessionCityId) throw new Error("ID da cidade não encontrado no sessionStorage (getConectionKey)"); 
       console.log("ID da Cidade (getConectionKey):", sessionCityId);
 
       const owner = Cookies.get("userName");
@@ -298,9 +296,9 @@ const getSistemaData = async () => {
     fetchCityManagers();
     getConectionKey();
     getSistemaData();
-  }, []); // Array de dependências vazio para executar apenas na montagem
+  }, []);
 
-  // Removidos os useEffects duplicados, já que as chamadas foram agrupadas no useEffect acima.
+ 
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
@@ -320,7 +318,6 @@ const getSistemaData = async () => {
           <hr className="border-gray-300" />
         </div>
 
-        {/* Chave de Conexão Section */}
         <section className="p-6 bg-white rounded-xl shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Chave de conexão</h2>
           <div className="flex items-center space-x-3">
@@ -346,13 +343,12 @@ const getSistemaData = async () => {
           </div>
         </section>
 
-        {/* Seção para exibir Dados do Sistema */}
         {dadosSistema && (
           <section className="p-6 bg-white rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               Dados do Sistema (Drenagem) 
             </h2>
-            {/* Verifica se está carregando E se dadosSistema ainda é null. Se já houver dados, não mostra "Carregando..." aqui. */}
+    
             {loading && !Object.keys(dadosSistema).length ? ( 
               <p className="text-gray-500">Carregando dados do sistema...</p>
             ) : Object.keys(dadosSistema).length > 0 ? (
@@ -377,7 +373,7 @@ const getSistemaData = async () => {
           </section>
         )}
 
-        {/* Tabela de Gerentes */}
+
         <section className="p-6 bg-white rounded-xl shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Gerentes Atuais</h2>
           <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -391,7 +387,7 @@ const getSistemaData = async () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {gerentes.length > 0 && gerentes.some(g => g.nome) ? gerentes.map((gerente, index) => (
-                  gerente.nome && ( // Renderiza apenas se o gerente tiver um nome (para evitar linhas vazias iniciais)
+                  gerente.nome && (
                     <tr key={gerente.id || index} className="hover:bg-gray-50 transition duration-150 ease-in-out">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input type="text" value={gerente.nome} readOnly className="w-full bg-transparent border-none focus:outline-none focus:ring-0 p-1 text-sm text-gray-700" />
@@ -416,7 +412,6 @@ const getSistemaData = async () => {
           </div>
         </section>
 
-        {/* Controle de Gerentes */}
         <section className="p-6 bg-white rounded-xl shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Controle de Gerentes</h2>
           <div className="space-y-6">
@@ -461,7 +456,7 @@ const getSistemaData = async () => {
           </div>
         </section>
 
-        {/* Convites Pendentes Section */}
+
         <section className="p-6 bg-white rounded-xl shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Convites Pendentes</h2>
           <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -509,7 +504,6 @@ const getSistemaData = async () => {
           </div>
         </section>
 
-        {/* Cidade Section */}
         <section className="p-6 bg-white rounded-xl shadow-lg">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Gerenciamento da Cidade</h2>
           <button

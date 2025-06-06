@@ -8,7 +8,7 @@ import Cookies from "js-cookie";
 import Sidebar from "./Sidebar";
 import PropTypes from 'prop-types';
 
-// Correção do ícone padrão do Leaflet
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
@@ -16,22 +16,22 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
 });
 
-// Ícone personalizado (opcional, pode usar o Default após a correção acima)
+
 const customIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
 });
 
-// Componente para controlar a visão do mapa (centro, zoom, limites)
+
 const MapViewControl = ({ center, zoom, bounds }) => {
   const map = useMap();
 
   useEffect(() => {
     if (bounds && bounds.length === 2 && bounds[0] && bounds[1] &&
-        checkCoordinatesValidity(bounds[0]) && checkCoordinatesValidity(bounds[1])) { // Validação dos bounds
+        checkCoordinatesValidity(bounds[0]) && checkCoordinatesValidity(bounds[1])) { 
       try {
-        map.flyToBounds(bounds, { padding: [50, 50] }); // Adiciona padding
+        map.flyToBounds(bounds, { padding: [50, 50] }); 
       } catch (e) {
         console.error("Erro ao tentar map.flyToBounds:", e, bounds);
         if (center && checkCoordinatesValidity(center)) {
@@ -52,7 +52,6 @@ MapViewControl.propTypes = {
   bounds: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
 };
 
-// Função auxiliar para verificar coordenadas (movida para fora para ser usada por MapViewControl também)
 const checkCoordinatesValidity = (coords) => {
   return coords &&
     Array.isArray(coords) &&
@@ -92,7 +91,7 @@ const GerenciarCidadesComponent = () => {
   });
 
   const fetchCityDataById = async (cityId) => {
-    // setIsLoadingPageData(true) é chamado antes desta função
+
     try {
       const currentUserName = Cookies.get("userName");
       const validationHash = Cookies.get("validation_hash");
@@ -103,8 +102,7 @@ const GerenciarCidadesComponent = () => {
         return;
       }
 
-      // ATENÇÃO: Verifique se os placeholders na URL devem ser substituídos ou se é apenas parte da query
-      // Exemplo: /city/get-data/${cityId}/${currentUserName}/${validationHash} OU /city/get-data/?city_id=...
+      
       const apiUrl = `http://56.125.35.215:8000/city/get-data/<city_id>/<owner_or_manager_user_name>/<validation_token>?city_id=${cityId}&user_name=${currentUserName}&validation_token=${validationHash}`;
       
       const response = await fetch(apiUrl, {
@@ -117,7 +115,9 @@ const GerenciarCidadesComponent = () => {
         try {
           const errorJson = JSON.parse(errorBodyText);
           errorBodyText = errorJson.message || errorJson.detail || JSON.stringify(errorJson);
-        } catch (e) { /* Mantém errorBodyText como texto se não for JSON */ }
+        } catch (e) {
+          errorBodyText = errorBodyText || "Erro desconhecido";
+        }
         throw new Error(`Falha ao buscar dados da cidade: ${errorBodyText} (Status: ${response.status})`);
       }
       
@@ -127,20 +127,20 @@ const GerenciarCidadesComponent = () => {
       if (data && data.cidade) {
         setCityDetails(data.cidade);
         setUserCargo(data.cargo);
-        setCityDevices(data.dispositivos || {}); // Popula cityDevices
+        setCityDevices(data.dispositivos || {}); 
       } else {
         throw new Error("Formato de dados da cidade inválido recebido da API.");
       }
     } catch (error) {
       console.error("Erro em fetchCityDataById:", error);
       alert(error.message || "Erro ao buscar dados da cidade.");
-      navigate("/paginaLogin"); // Ou para a página de seleção de cidades
+      navigate("/paginaLogin"); 
     } finally {
       setIsLoadingPageData(false);
     }
   };
 
-  // useEffect principal para carregar dados da cidade
+
   useEffect(() => {
     if (loadingAuth) {
       setIsLoadingPageData(true);
@@ -185,16 +185,16 @@ const GerenciarCidadesComponent = () => {
   }, [loadingAuth, usuarioLogado, navigate, location.state]);
 
 
-  // useEffect para geocodificar a cidade/estado para o mapa
+
   useEffect(() => {
-    // Define um mapViewSettings inicial baseado nas coordenadas da localidade, se disponíveis
+
     if (cityDetails && checkCoordinatesValidity(cityDetails.coordenadas) && !mapViewSettings.bounds) {
-        if(!mapViewSettings.center || (mapViewSettings.center[0] !== parseFloat(cityDetails.coordenadas[0]))){ // Evita re-setar desnecessariamente
+        if(!mapViewSettings.center || (mapViewSettings.center[0] !== parseFloat(cityDetails.coordenadas[0]))){ 
             setMapViewSettings(prev => ({
                 ...prev,
                 key: Date.now(),
                 center: cityDetails.coordenadas.map(c => parseFloat(c)),
-                zoom: 15, // Zoom padrão para localidade específica
+                zoom: 15, 
             }));
         }
     }
@@ -202,7 +202,7 @@ const GerenciarCidadesComponent = () => {
     if (cityDetails && cityDetails.cidade && cityDetails.estado) {
       const geocodeCityAndSetView = async () => {
         console.log(`Iniciando geocodificação para: ${cityDetails.cidade}, ${cityDetails.estado}`);
-        setIsLoadingPageData(true); // Indica que estamos processando algo para o mapa
+        setIsLoadingPageData(true); 
         try {
           const query = `${cityDetails.cidade}, ${cityDetails.estado}, Brasil`;
           const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=br`;
@@ -240,7 +240,7 @@ const GerenciarCidadesComponent = () => {
                 bounds: null,
               });
             } else {
-              // Se nem as coordenadas da localidade existirem, centraliza no Brasil
+
                setMapViewSettings({ key: Date.now(), center: [-14.2350, -51.9253], zoom: 4, bounds: null });
             }
           }
@@ -257,23 +257,21 @@ const GerenciarCidadesComponent = () => {
              setMapViewSettings({ key: Date.now(), center: [-14.2350, -51.9253], zoom: 4, bounds: null });
           }
         } finally {
-            setIsLoadingPageData(false); // Termina o loading após geocodificação
+            setIsLoadingPageData(false); 
         }
       };
       geocodeCityAndSetView();
     } else if (cityDetails && checkCoordinatesValidity(cityDetails.coordenadas) && isLoadingPageData) {
-        // Se não tem cidade/estado para geocodificar, mas tem coordenadas da localidade e está carregando, para o loading.
+
         setIsLoadingPageData(false);
     } else if (!cityDetails && isLoadingPageData) {
-        // Se não tem cityDetails e está carregando, para o loading (ex: falha ao buscar cityDetails)
-        // Isso é coberto pelo finally do fetchCityDataById, mas como defesa.
+
         setIsLoadingPageData(false);
     }
-  }, [cityDetails]); // Re-executa se cityDetails mudar
+  }, [cityDetails]); 
 
-  // useEffect para buscar pontos filtrados (já existente, com URL corrigida)
-const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { // Novo parâmetro
-  // Validação inicial para cityDetails e obtenção do cityIdValue
+
+const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { 
   let cityIdValue = cityDetails?.id;
   if (!cityIdValue) {
     const cityIdFromSession = sessionStorage.getItem('currentCityId');
@@ -299,7 +297,7 @@ const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { // Novo par
     return;
   }
 
-  // Usa o argumento 'filtrosParaUsarNaAPI' se fornecido, senão usa o estado 'filtrosMapa'
+
   const listFilterObject = filtrosParaUsarNaAPI || filtrosMapa; 
   const listFilterStringValue = JSON.stringify(listFilterObject);
 
@@ -327,7 +325,6 @@ const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { // Novo par
     return;
   }
 
-  // Adicionado log para ver o objeto de filtros que está sendo stringificado
   console.log("Objeto de filtros usado para a API:", listFilterObject);
   console.log("URL API (buscarPontosFiltradosDaAPI):", apiUrlString);
 
@@ -349,7 +346,10 @@ const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { // Novo par
           const rawText = await response.text();
           errorDetail = rawText || `Resposta não-JSON: ${response.statusText}`;
           errorBody = `Falha ao buscar pontos filtrados: ${errorDetail}`;
-        } catch (textErr) { /* Mantém o errorBody original se tudo falhar */ }
+        } catch (textErr) {
+          errorDetail = "Erro ao ler resposta da API.";
+          errorBody = `Falha ao buscar pontos filtrados: ${errorDetail}`;
+        }
       }
       console.error("Detalhe do erro da API:", errorDetail || "Não foi possível obter detalhes do erro da API.");
       throw new Error(errorBody);
@@ -369,7 +369,6 @@ const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { // Novo par
 };
 
   
-  // useEffect para filtrar pontos localmente (já existente)
   useEffect(() => {
     if (cityDetails && cityDetails.pontos && categoriaSelecionada) {
       setPontosFiltrados(cityDetails.pontos[categoriaSelecionada] || []);
@@ -389,12 +388,12 @@ const buscarPontosFiltradosDaAPI = async (filtrosParaUsarNaAPI) => { // Novo par
     setTempFiltrosMapa(prev => ({...prev, [categoria]: !prev[categoria] }));
   };
 const confirmarFiltros = () => {
-  const filtrosAtuais = { ...tempFiltrosMapa }; // Captura o estado atual de tempFiltrosMapa
-  setFiltrosMapa(filtrosAtuais); // Atualiza o estado principal 'filtrosMapa' (para UI e consistência)
-  buscarPontosFiltradosDaAPI(filtrosAtuais); // Passa os filtros atuais diretamente para a função da API
+  const filtrosAtuais = { ...tempFiltrosMapa }; 
+  setFiltrosMapa(filtrosAtuais); 
+  buscarPontosFiltradosDaAPI(filtrosAtuais); 
 };
 
-  // Lógica de Renderização Condicional
+
   if (loadingAuth) {
     return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div><p className="ml-3">Carregando autenticação...</p></div>;
   }
@@ -513,14 +512,12 @@ const confirmarFiltros = () => {
                             </Marker>
                         ))
                       )}
-
-                      {/* NOVO: Marcadores para cityDevices */}
                       {cityDevices && Object.entries(cityDevices).map(([deviceName, deviceData]) => {
                         if (deviceData && typeof deviceData.lat === 'number' && typeof deviceData.long === 'number' &&
                             checkCoordinatesValidity([deviceData.lat, deviceData.long])) {
                           return (
                             <Marker
-                              key={deviceData.mac_adress || deviceName} // Usar mac_adress como chave prioritária
+                              key={deviceData.mac_adress || deviceName} 
                               position={[deviceData.lat, deviceData.long]}
                               icon={customIcon} 
                             >

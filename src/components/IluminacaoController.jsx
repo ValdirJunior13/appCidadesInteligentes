@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import Sidebar from './Sidebar'; // Sua Sidebar autogerenciável
+import Sidebar from './Sidebar'; 
 import Cookies from 'js-cookie';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
-// Correção para o ícone padrão do Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -17,7 +16,6 @@ L.Icon.Default.mergeOptions({
 
 const convertSecondsToHHMM = (totalSeconds) => {
   if (totalSeconds === null || totalSeconds === undefined || typeof totalSeconds !== 'number' || isNaN(totalSeconds)) {
-    // console.warn(`[convertSecondsToHHMM] Valor inválido ou nulo recebido: ${totalSeconds}. Retornando string vazia.`);
     return '';
   }
   const hours = Math.floor(totalSeconds / 3600);
@@ -32,18 +30,17 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
   const centroMapa = cidadeSelecionada?.coordenadas || [-15.788, -47.879];
   const mapRef = useRef(null);
   const navigate = useNavigate();
-  const { logout, usuarioLogado } = useAuth(); // Pegando usuarioLogado se tiver o nome de usuário
-
+  const { logout, usuarioLogado } = useAuth(); 
   const [dadosSistema, setDadosSistema] = useState(null);
   const [loading, setLoading] = useState(false);
   
   const [showUserMenuDropdown, setShowUserMenuDropdown] = useState(false);
   
-  // Estados para a função handleAccountOption
+
   const [userInfoData, setUserInfoData] = useState(null);
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
 
-  // Seus outros estados específicos da página
+
   const [modoSelecionado, setModoSelecionado] = useState('automatico');
   const [luminosidadeMin, setLuminosidadeMin] = useState('40');
   const [luminosidadeMax, setLuminosidadeMax] = useState('70');
@@ -51,7 +48,6 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
   const [horarioTermino, setHorarioTermino] = useState('');
   const [usarPadraoAuto, setUsarPadraoAuto] = useState(true);
 
-  // Função para pegar o nome do usuário do cookie, para ser usado em handleAccountOption
   const currentUserNameFromCookie = Cookies.get("userName");
 
   const getSistemaData = async () => {
@@ -178,35 +174,23 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
     }
   };
 
-  // Função de logout para o header
+
   const handleLogoutClick = () => {
     logout();
-    // navigate('/login'); // Se o AuthContext ou ProtectedRoute não redirecionar
   };
   
   const pageTitle = "Controle de Iluminação";
 
-  // ===== FUNÇÃO ADICIONADA AQUI =====
   const handleAccountOption = async (option) => {
-    const userName = currentUserNameFromCookie; // Usando a variável definida no escopo do componente
+    const userName = currentUserNameFromCookie; 
     const currentValidationHash = Cookies.get("validation_hash"); 
     
     if (!userName || !currentValidationHash) {
       alert("Erro: Informações de autenticação não encontradas.");
-      setLoading(false); // Certifique-se de parar o loading se houver erro aqui
+      setLoading(false); 
       return;
     }
 
-    // A URL já interpola os valores, não precisa dos placeholders < > no path se eles são query params
-    // Se user_name e validation_token são PATH PARAMS e não query params, a URL seria diferente.
-    // Assumindo que são query params conforme o ?user_name=...&vld_hashing=...
-    // E que o path base é /user/info/
-    // Se os placeholders <user_name>/<validation_token> são literais na sua API (incomum), mantenha.
-    // Senão, remova-os do path se forem apenas query params.
-    // A sua URL original era: /user/info/<user_name>/<validation_token>?user_name=${}&vld_hashing=${}
-    // Se <user_name> e <validation_token> são placeholders para path params, então eles não deveriam estar na query.
-    // Se são query params, o path não deveria ter os placeholders.
-    // Vou manter sua estrutura original de URL por enquanto, mas ela é ambígua.
     const url = `http://56.125.35.215:8000/user/info/<user_name>/<validation_token>?user_name=${encodeURIComponent(userName)}&vld_hashing=${encodeURIComponent(currentValidationHash)}`;
     
     console.log("Chamando handleAccountOption com URL:", url);
@@ -219,7 +203,7 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
           const errorData = await response.json(); 
           serverErrorMessage = errorData.message || errorData.detail || JSON.stringify(errorData);
         } catch (e) { 
-          serverErrorMessage = await response.text() || serverErrorMessage; // Adicionado fallback para response.text()
+          serverErrorMessage = await response.text() || serverErrorMessage; 
           console.warn("Não foi possível parsear erro JSON, usando texto da resposta:", serverErrorMessage);
         }
         throw new Error(serverErrorMessage);
@@ -229,7 +213,7 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
       if (option === "dados" || option === "email" || option === "senha") {
         setUserInfoData(dadosUsuario);   
         setShowUserInfoModal(true);     
-        // Você precisará de um componente Modal para exibir userInfoData e setShowUserInfoModal(false) para fechá-lo
+
       }
     } catch (error) {
       console.error("Erro em handleAccountOption:", error);
@@ -240,18 +224,15 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
       setLoading(false); 
     }
   };
-  // ===== FIM DA FUNÇÃO ADICIONADA =====
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans overflow-hidden">
       <Sidebar 
         activeItem="iluminacao"
-        // cidadeAtual={cidadeSelecionada} // Passe se a Sidebar precisar
       />
       <div className="flex-1 flex flex-col">
         <header className="bg-white bg-opacity-90 shadow-sm py-3 px-6 flex justify-between items-center sticky top-0 z-30 backdrop-blur-sm shrink-0">
           <div className="flex items-center space-x-4 min-w-0">
-            {/* Removido o botão de toggle da sidebar do header, já que a sidebar tem o seu */}
             <h1 className="text-xl md:text-2xl font-bold text-gray-800 truncate" title={pageTitle}>
               {pageTitle}
             </h1>
@@ -274,7 +255,6 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
                 <div className="px-4 py-3">
                   <p className="text-sm font-medium text-gray-900">{Cookies.get("userName") || "Usuário"}</p>
                 </div>
-                {/* Botões do menu dropdown atualizados */}
                 <div className="py-1">
                   <button onClick={() => { handleAccountOption("dados"); setShowUserMenuDropdown(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -308,7 +288,6 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"> 
             <div className="space-y-6">
-              {/* Card Modo Automático */}
               <div className="bg-zinc-900 text-white rounded-lg p-6 shadow-lg">
         
                 <div className="flex items-center mb-3">
@@ -333,7 +312,6 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
                   </div>
                 </div>
               </div>
-              {/* Card Modo Horário */}
               <div className="bg-zinc-900 text-white rounded-lg p-6 shadow-lg">
                 <div className="flex items-center mb-3">
                     <input type="radio" id="modoHorario" name="modoIluminacao" checked={modoSelecionado === 'horario'} onChange={() => handleModoChange('horario')} className="mr-3 h-5 w-5 text-yellow-400 focus:ring-yellow-500 border-gray-500 cursor-pointer"/>
@@ -352,7 +330,6 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
                 </div>
               </div>
             </div>
-            {/* Coluna da Direita: Modo Manual e Mapa */}
             <div className="bg-zinc-900 text-white rounded-lg p-6 shadow-lg flex flex-col h-full">
                 <div className="flex items-center mb-3">
                     <input type="radio" id="modoManual" name="modoIluminacao" checked={modoSelecionado === 'manual'} onChange={() => handleModoChange('manual')} className="mr-3 h-5 w-5 text-yellow-400 focus:ring-yellow-500 border-gray-500 cursor-pointer"/>
@@ -399,7 +376,6 @@ const IluminacaoController = ({ pontosIluminacao: propPontosIluminacao = [], cid
         </main>
       </div>
 
-      {/* Modal para exibir informações do usuário - exemplo básico */}
       {showUserInfoModal && userInfoData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[150]">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">

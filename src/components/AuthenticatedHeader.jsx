@@ -1,19 +1,17 @@
 
-// src/components/AuthenticatedHeader.jsx (ou onde preferir)
 import React, { useState } from 'react';
 import Cookies from 'js-cookie';
-import { useAuth } from '../context/AuthContext'; // Ajuste o caminho se necessário
+import { useAuth } from '../context/AuthContext'; 
 import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom'; // Para o link "Dados da Conta"
+import { Link } from 'react-router-dom'; 
 
 const AuthenticatedHeader = ({ pageTitle, onToggleSidebar }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { logout } = useAuth(); // Pega a função logout do seu AuthContext
+  const { logout } = useAuth(); 
 
   const handleLogoutClick = () => {
     logout();
-    // O redirecionamento para /login geralmente é tratado pelo ProtectedRoute
-    // ou pela própria função logout dentro do AuthContext.
+
   };
 
   return (
@@ -31,7 +29,7 @@ const AuthenticatedHeader = ({ pageTitle, onToggleSidebar }) => {
           </button>
         )}
         <h1 className="text-xl md:text-2xl font-bold text-gray-800 truncate" title={pageTitle}>
-          {pageTitle || "Dashboard"} {/* Título da página ou um padrão */}
+          {pageTitle || "Dashboard"} 
         </h1>
       </div>
       <div className="relative">
@@ -52,11 +50,11 @@ const AuthenticatedHeader = ({ pageTitle, onToggleSidebar }) => {
             <div className="px-4 py-3">
               <p className="text-sm font-medium text-gray-900">{Cookies.get("userName") || "Usuário"}</p>
             </div>
-            {/* Você pode adicionar um link para as configurações da conta aqui se tiver uma rota */}
+
             <div className="py-1">
               <Link 
-                to="/configuracoes" // Exemplo de rota para configurações
-                onClick={() => setShowUserMenu(false)} // Fecha o menu ao clicar
+                to="/configuracoes" 
+                onClick={() => setShowUserMenu(false)} 
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center space-x-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -4,6 +4,10 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import Sidebar from './Sidebar'; 
 import Cookies from 'js-cookie'; 
+import PropTypes from 'prop-types';
+
+
+
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -127,19 +131,24 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
     }
   }, []);
 
+  IrrigacaoController.propTypes = {
+  pontosIrrigacao: PropTypes.array,
+  cidadeSelecionada: PropTypes.shape({
+    coordenadas: PropTypes.arrayOf(PropTypes.number),
+  }),
+};
+
   useEffect(() => {
     getSistemaData();
   }, [getSistemaData]);
 
-  const postSystemData = async (systemSpecificPayload) => {
+ const postSystemData = async (systemSpecificPayload) => {
     const userName = Cookies.get("userName");
     const validationHash = Cookies.get('validation_hash');
     const cityId = sessionStorage.getItem('currentCityId');
 
     if (!userName || !validationHash || !cityId) {
-        alert("Erro: Informações de autenticação ou ID da cidade ausentes. Não é possível salvar.");
-        console.error("[postSystemData] ERRO: user_name, validation_hash ou city_id ausentes.");
-        setLoading(false); 
+        alert("Erro: Informações de autenticação ou ID da cidade ausentes.");
         return;
     }
 
@@ -147,58 +156,49 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
       user_name: userName,
       validation_hash: validationHash,
       city_id: cityId,
-      system_name: "irrigacao", 
+      system_name: "irrigacao",
       payload: systemSpecificPayload
-    };
-
- 
-    const userNameForPath = encodeURIComponent(userName);
-    const validationHashForPath = encodeURIComponent(validationHash); 
-    const systemNameForPath = encodeURIComponent("irrigacao"); 
 
 
-    let updateUrl = `http://56.125.35.215:8000/city/update/<username>/<validation_token>/<system_name>/<payload>?city_id=${bodyPayload.city_id}&user_name=${userNameForPath}&validation_hash=${validationHashForPath}&system_name=${systemNameForPath}&payload=${systemNameForPath}`;
+};
 
+const userNameForPath = encodeURIComponent(userName);
+const validationHashForPath = encodeURIComponent(validationHash);
+const systemNameForPath = encodeURIComponent("irrigacao");
 
-    console.log("[postSystemData] Payload para CORPO:", JSON.stringify(bodyPayload, null, 2));
-    console.log("[postSystemData] URL de ATUALIZAÇÃO:", updateUrl);
+    // --- A CORREÇÃO ESTÁ AQUI ---
+    // Montamos a URL usando as variáveis para substituir os placeholders.
+    // Note que removemos o <payload> do caminho da URL, pois ele é enviado no corpo (body) da requisição POST.
+     let updateUrl = `http://56.125.35.215:8000/city/update/<username>/<validation_token>/<system_name>/<payload>?city_id=${bodyPayload.city_id}&user_name=${userNameForPath}&validation_hash=${validationHashForPath}&system_name=${systemNameForPath}&payload=${systemNameForPath}`;
+    console.log("[postSystemData] Payload a ser enviado no CORPO:", JSON.stringify(bodyPayload, null, 2));
+    console.log("[postSystemData] URL de ATUALIZAÇÃO corrigida:", updateUrl);
     
     setLoading(true);
     try {
-      const response = await fetch(updateUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', "Accept": "application/json" },
-        body: JSON.stringify(bodyPayload)
-      });
+        const response = await fetch(updateUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', "Accept": "application/json" },
+            body: JSON.stringify(bodyPayload)
+        });
 
-      console.log("[postSystemData] Resposta API update - Status:", response.status, "Ok:", response.ok);
-      if (!response.ok) {
-        let errorData;
-        let errorTextDetail = `Erro HTTP ${response.status} (${response.statusText})`;
-        try {
-            errorData = await response.json();
-            if (errorData && errorData.detail) {
-                errorTextDetail = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail);
-            } else if (typeof errorData === 'string') { 
-                errorTextDetail = errorData;
-            }
-        } catch (e) {
-            const rawErrorText = await response.text();
-            errorTextDetail = rawErrorText || errorTextDetail; 
+        console.log("[postSystemData] Resposta API update - Status:", response.status, "Ok:", response.ok);
+        
+        if (!response.ok) {
+
+            const errorData = await response.json().catch(() => ({ detail: `Erro no servidor (Status: ${response.status})` }));
+            const errorMessage = errorData.detail || "Ocorreu um problema no servidor!";
+            throw new Error(errorMessage);
         }
-        console.error("[postSystemData] Erro ao salvar (dados API):", errorData || errorTextDetail);
-        throw new Error(errorTextDetail);
-      }
-      
-      const result = await response.json();
-      console.log("[postSystemData] Resposta API update (sucesso):", result);
-      alert('Configurações salvas com sucesso!');
-      await getSistemaData(); 
+        
+        const result = await response.json();
+        console.log("[postSystemData] Resposta API update (sucesso):", result);
+        alert('Configurações salvas com sucesso!');
+        await getSistemaData(); 
     } catch (error) {
-      console.error("[postSystemData] ERRO CAPTURADO ao salvar:", error.message);
-      alert(`Erro ao salvar: ${error.message}`);
+        console.error("[postSystemData] ERRO CAPTURADO ao salvar:", error.message);
+        alert(`Erro ao salvar: ${error.message}`);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
 };
   
@@ -214,21 +214,25 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
         };
       } else {
         systemSpecificPayload = {
-          modo: "automatico",
+          modo: "auto",
           u_min: percentageStringToDecimal(umidadeMinima),
-          // u_max: ???
           t_funcionamento_a: minutesStringToSeconds(tempoFuncionamentoAutomatico)
         };
       }
     } else if (modo === 'horario') {
-      systemSpecificPayload = {
-        modo: "horario",
-        h_inicio: HHMMToSeconds(horarioInicio),
-        t_funcionamento_h: minutesStringToSeconds(tempoFuncionamentoHorario),
-        repetir: repetirHorario === 'sim' ? 1 : 0,
-        periodo: repetirHorario === 'sim' ? 24 : 0
-      };
-    } else if (modo === 'manual') {
+        // MODO HORÁRIO CORRIGIDO:
+        // Cria um payload limpo, sem os campos u_min e u_max do modo automático
+        systemSpecificPayload = {
+   // Começa com a base zerada
+            modo: "horario",
+            h_inicio: HHMMToSeconds(horarioInicio),
+            t_funcionamento_h: minutesStringToSeconds(tempoFuncionamentoHorario),
+            repetir: repetirHorario === 'sim' ? 1 : 0,
+            periodo: repetirHorario === 'sim' ? 86400 : 0,
+        };
+
+
+} else if (modo === 'manual') {
       systemSpecificPayload = {
         modo: "manual",
         dispositivos: dadosSistema?.dispositivos || {} 
@@ -252,7 +256,9 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
   const handleModoChange = (novoModo) => {
     setModo(novoModo);
     if (novoModo !== 'automatico' && !usarPadraoAutomatico) {
-
+      setUsarPadraoAutomatico(true); 
+      setUmidadeMinima('30'); 
+      setTempoFuncionamentoAutomatico('10'); 
     }
   };
 
@@ -277,9 +283,8 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Coluna da Esquerda: Modo Automático e Modo Horário */}
           <div className="space-y-6">
-            {/* Modo Automático */}
+
             <div className="bg-zinc-900 text-white rounded-lg p-4">
               <div className="flex items-center mb-2">
                 <input
@@ -346,11 +351,9 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
                     </div>
                   </>
                 )}
-                {/* Botão Confirmar removido daqui */}
               </div>
             </div>
 
-            {/* Modo Horário */}
             <div className="bg-zinc-900 text-white rounded-lg p-4">
               <div className="flex items-center mb-2">
                 <input
@@ -416,12 +419,9 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
                     </label>
                   </div>
                 </div>
-                 {/* Botão Confirmar removido daqui */}
               </div>
             </div>
           </div>
-
-          {/* Coluna da Direita: Modo Manual */}
           <div className="bg-zinc-900 text-white rounded-lg p-4 flex flex-col h-full">
             <div className="flex items-center mb-2">
               <input
@@ -457,11 +457,9 @@ const IrrigacaoController = ({ pontosIrrigacao = [], cidadeSelecionada }) => {
                 ))}
               </MapContainer>
             </div>
-             {/* Botão Confirmar removido daqui */}
           </div>
         </div>
 
-        {/* Botão Global para Salvar Configurações */}
         <div className="mt-8 flex justify-end">
             <button
                 onClick={handleSalvarConfiguracoes}

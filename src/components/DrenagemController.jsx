@@ -6,7 +6,6 @@ import Sidebar from './Sidebar';
 import Cookies from 'js-cookie';
 import PropTypes from 'prop-types';
 
-// Configuração do ícone do Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
@@ -20,7 +19,7 @@ const customIcon = new L.Icon({
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
 });
 
-// Componente auxiliar para controle do mapa (mantido do seu original)
+
 const checkCoordinatesValidity = (coords) => {
   return coords && Array.isArray(coords) && coords.length === 2 &&
          !isNaN(parseFloat(coords[0])) && !isNaN(parseFloat(coords[1]));
@@ -49,7 +48,7 @@ MapViewControl.propTypes = {
   bounds: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
 };
 
-// Componente principal DrenagemController
+
 const DrenagemController = ({ pontosDrenagem = [], cidadeSelecionada }) => {
   const centroMapa = useMemo(() => cidadeSelecionada?.coordenadas || [-15.788, -47.879], [cidadeSelecionada]);
   
@@ -57,31 +56,24 @@ const DrenagemController = ({ pontosDrenagem = [], cidadeSelecionada }) => {
   const [modoSelecionado, setModoSelecionado] = useState('automatico');
   const [valorAtivacao, setValorAtivacao] = useState('0.5');
 
-  // O estado `dispositivosMapa` foi restaurado para permitir a interatividade no mapa
+
   const [dispositivosMapa, setDispositivosMapa] = useState([]);
 
-  // =================================================================================
-  // PONTO CRÍTICO: Este useEffect foi restaurado.
-  // Ele é NECESSÁRIO para criar uma cópia dos pontos que pode ser modificada (ligar/desligar).
-  //
-  // ATENÇÃO: Para que ele NÃO cause um loop infinito, a prop `pontosDrenagem` que
-  // vem do componente PAI deve ser estabilizada com `useMemo`, como explicado anteriormente.
-  // =================================================================================
 const pontosDrenagemString = JSON.stringify(pontosDrenagem);
 
 useEffect(() => {
   console.log("Atualizando dispositivos do mapa porque o conteúdo de pontosDrenagem mudou.");
   
-  // A lógica interna continua a mesma, mas agora usamos a prop original.
+
   setDispositivosMapa(
     pontosDrenagem.map((ponto, index) => ({
       id: ponto.id || index,
-      posicao: ponto.coordenadas || [0, 0], // Usar um fallback seguro
+      posicao: ponto.coordenadas || [0, 0], 
       nome: ponto.nome || `Bomba ${index + 1}`,
       status: ponto.status || false
     }))
   );
-// A MÁGICA: A dependência agora é a string, que só muda se o CONTEÚDO mudar.
+
 }, [pontosDrenagemString]);
   const getSistemaData = useCallback(async () => {
     setLoading(true);
@@ -172,10 +164,10 @@ useEffect(() => {
         modo: 'auto',
         valor_ativacao: valorAtivacao !== '' ? parseFloat(valorAtivacao) : null
       };
-    } else { // modo 'manual'
+    } else { 
       payload = {
         modo: 'manual',
-        // Envia o estado atual dos dispositivos que estão no mapa
+
         dispositivos: dispositivosMapa.reduce((acc, dev) => {
           acc[dev.id] = dev.status;
           return acc;
@@ -185,7 +177,6 @@ useEffect(() => {
     postSystemData(payload);
   };
   
-  // Função para alterar o status do dispositivo no mapa (restaurada)
   const toggleDispositivo = (id) => {
     if (modoSelecionado === 'manual') {
       setDispositivosMapa(prevDispositivos =>
@@ -210,9 +201,7 @@ useEffect(() => {
         )}
         <h1 className="text-2xl sm:text-3xl font-bold text-black mb-6">Controle de Drenagem</h1>
         
-        {/* Layout original de duas colunas restaurado */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Coluna da Esquerda: Controles de Modo */}
           <div className="space-y-6">
             <div className="bg-zinc-900 text-white rounded-lg p-6 shadow-lg">
               <div className="flex items-center mb-3">
@@ -237,7 +226,6 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Coluna da Direita: Modo Manual e Mapa */}
           <div className="bg-zinc-900 text-white rounded-lg p-6 shadow-lg flex flex-col h-full">
             <div className="flex items-center mb-3">
               <input type="radio" id="modoManualDrenagem" name="modoDrenagem" 

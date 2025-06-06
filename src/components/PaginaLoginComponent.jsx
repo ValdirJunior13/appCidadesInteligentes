@@ -1,43 +1,38 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext"; // Verifique o caminho
+import { useAuth } from "../context/AuthContext"; 
 import Cookies from "js-cookie";
-import Quadrado from "../components/Quadrado"; // Verifique o caminho
+import Quadrado from "../components/Quadrado"; 
 
 const PaginaLoginComponent = () => {
   const navigate = useNavigate();
   const { usuarioLogado, logout, loadingAuth } = useAuth();
 
-  // Estados do componente
-  const [citys, setCitys] = useState([]); // Lista de cidades criadas pelo usuário
-  const [mostrarFormulario, setMostrarFormulario] = useState(false); // Controla visibilidade do formulário de nova cidade
+
+  const [citys, setCitys] = useState([]); 
+  const [mostrarFormulario, setMostrarFormulario] = useState(false); 
   const [novoEndereco, setNovoEndereco] = useState({
     user_name: Cookies.get("userName"),
-    name: "", // Nome da localidade (Ex: Cohab)
-    state: "", // UF do estado (Ex: SP) - será preenchido pelo select
-    city: "",  // Nome da cidade (Ex: São Paulo) - será preenchido pelo select
+    name: "", 
+    state: "", 
+    city: "",  
     coordenadas: null,
   });
   const userName = Cookies.get("userName") || "Usuário";
-  const [loading, setLoading] = useState(false); // Loading geral para operações principais
+  const [loading, setLoading] = useState(false); 
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  // Estados para Convites/Notificações
   const [invitations, setInvitations] = useState([]);
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
-  const [hasNewNotifications, setHasNewNotifications] = useState(true); // Idealmente, atualizar baseado em dados reais
+  const [hasNewNotifications, setHasNewNotifications] = useState(true); 
   const [selectedNotificationId, setSelectedNotificationId] = useState(null);
   const [citySearchTerm, setCitySearchTerm] = useState("");
-  
-  // Estados para Modal de Dados do Usuário
+
   const [userInfoData, setUserInfoData] = useState(null);
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
-  
-  // Estados para selects de Estado (UF) e Cidade no formulário de nova cidade
-  const [allAvailableStates, setAllAvailableStates] = useState([]); // Armazena UFs ["SP", "RJ"]
-  const [citiesForSelectedState, setCitiesForSelectedState] = useState([]); // Armazena cidades ["São Paulo", "Campinas"]
-  const [loadingStates, setLoadingStates] = useState(false); // Loading específico para buscar estados
-  const [loadingCities, setLoadingCities] = useState(false); // Loading específico para buscar cidades
+  const [allAvailableStates, setAllAvailableStates] = useState([]); 
+  const [citiesForSelectedState, setCitiesForSelectedState] = useState([]); 
+  const [loadingStates, setLoadingStates] = useState(false); 
+  const [loadingCities, setLoadingCities] = useState(false); 
   
   const [addInvitation, setAddInvitation] = useState({
     user_name: Cookies.get("userName") || "",
@@ -52,7 +47,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
     user_name: Cookies.get("userName") || "",
     validation_hash: Cookies.get("validation_hash") || "",
     city_id: conviteEspecifico.city_id, 
-    decision: valorDecisao, // Usar o valor da decisão passado
+    decision: valorDecisao, 
     role: conviteEspecifico.role,
   };
 
@@ -64,7 +59,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
       typeof payload.decision === 'boolean' &&
       payload.role
     ) {
-      setLoading(true); // Usar loading geral
+      setLoading(true); 
       try {
         const response = await fetch("http://56.125.35.215:8000/user/manager/submit-invitation-answer", {
           method: "POST",
@@ -81,9 +76,9 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
           }
           throw new Error(serverErrorMessage);
         }
-        // const data = await response.json(); // Descomente se precisar usar 'data'
+
         alert(`Resposta ao convite (${payload.decision ? 'Aceito' : 'Rejeitado'}) enviada com sucesso!`);
-        getInvitations(); // Atualiza a lista de convites
+        getInvitations(); 
       } catch (error) {
         console.error("Erro ao enviar resposta de convite:", error);
         alert(`Erro ao enviar resposta de convite: ${error.message}`);
@@ -116,13 +111,21 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
         throw new Error(serverErrorMessage);
       }
       const data = await response.json();
-      const formattedInvitations = (Array.isArray(data) ? data : (data ? Object.values(data) : [])).map(inv => ({
-        id: inv.invitation_id || inv.id || `fallback-id-${Math.random()}`,
-        text: inv.message || `Convite para ${inv.role_name || inv.papel_gerente || 'cargo desconhecido'} em ${inv.city_name || inv.cidade_id || 'cidade desconhecida'}`,
+      const formattedInvitations = (Array.isArray(data) ? data : (data ? Object.values(data) : [])).map(inv => {
+
+    const cargo = inv.papel_gerente || 'cargo desconhecido';
+    const nomeCidade = inv.nome_cidade || 'cidade desconhecida';
+    const nomeRemetente = currentUserName || 'um administrador';
+
+
+    return {
+        id: inv.invitation_id || inv.id,
+        text: `Você recebeu um convite para atuar como gerente de ${cargo} na localidade ${nomeCidade}, enviado por ${nomeRemetente}.`,
         type: 'invitation',
         city_id: inv.cidade_id,
-        role: inv.role_name || inv.papel_gerente,
-      }));
+        role: cargo,
+    };
+});
       setInvitations(formattedInvitations);
       setHasNewNotifications(formattedInvitations.length > 0); 
     } catch (error) {
@@ -149,7 +152,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
       prepararRespostaConvite({ city_id: notification.city_id, role: notification.role }, true);
     } else {
       let errorMessage = "Não é possível aceitar esta notificação: dados incompletos.";
-      // ... (lógica de mensagem de erro)
+
       alert(errorMessage);
     }
     setSelectedNotificationId(null);
@@ -172,23 +175,21 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
         throw new Error(`Erro ao buscar estados: ${response.status} - ${errorText}`);
       }
 
-      // Lê o corpo da resposta como texto APENAS UMA VEZ
       const responseText = await response.text();
       console.log("fetchAllGeoStates: Resposta bruta da API (texto):", responseText);
 
       try {
-        const data = JSON.parse(responseText); // Tenta parsear o texto como JSON
+        const data = JSON.parse(responseText); 
         console.log("fetchAllGeoStates: Dados parseados da API (JSON):", data);
 
-        // --- CORREÇÃO APLICADA AQUI ---
-        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-          // Se 'data' é um objeto (e não um array ou nulo), extraímos seus valores (que são as UFs)
+   
+        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {   
           const ufsArray = Object.values(data); 
-          ufsArray.sort(); // Opcional: Ordenar as UFs alfabeticamente
+          ufsArray.sort(); 
           setAllAvailableStates(ufsArray);
           console.log("fetchAllGeoStates: UFs extraídas, ordenadas e definidas no estado:", ufsArray);
         } else {
-          // Se não for um objeto ou se for um array (inesperado baseado no log atual)
+   
           console.warn("fetchAllGeoStates: Os dados recebidos não são um objeto (chave-valor) esperado ou são um array. Dados recebidos:", data);
           setAllAvailableStates([]);
         }
@@ -226,8 +227,10 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
       let errorBodyMessage = `Erro ${response.status}`;
       try {
         const errorText = await response.text();
-        errorBodyMessage = errorText || errorBodyMessage; // Usa o texto do erro se disponível
-      } catch (e) { /* Mantém a mensagem de status se não puder ler o corpo */ }
+        errorBodyMessage = errorText || errorBodyMessage; 
+      } catch (e) {
+        console.warn("fetchCitiesByUF: Não foi possível ler o corpo do erro como texto.");
+      }
       console.error(`fetchCitiesByUF: Erro na API para ${uf}. Status: ${response.status}`, errorBodyMessage);
       throw new Error(`Erro ao buscar cidades para ${uf}: ${response.status} - ${errorBodyMessage}`);
     }
@@ -235,15 +238,12 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
     const data = await response.json();
     console.log(`fetchCitiesByUF: Dados de cidades para ${uf} (JSON parseado):`, data);
 
-    // --- CORREÇÃO APLICADA AQUI ---
     if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-      // Se 'data' é um objeto (e não um array ou nulo), extraímos seus valores
       const cityNamesArray = Object.values(data); 
-      cityNamesArray.sort(); // Opcional: Ordenar as cidades alfabeticamente
+      cityNamesArray.sort();
       setCitiesForSelectedState(cityNamesArray);
       console.log(`fetchCitiesByUF: Nomes das cidades extraídos e definidos no estado:`, cityNamesArray);
     } else if (Array.isArray(data)) {
-      // Caso a API inesperadamente retorne um array, ainda o tratamos
       data.sort();
       setCitiesForSelectedState(data);
       console.log(`fetchCitiesByUF: Dados recebidos já eram um array e foram definidos no estado:`, data);
@@ -255,8 +255,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
   } catch (error) {
     console.error("Erro em fetchCitiesByUF:", error.message, error);
     setCitiesForSelectedState([]);
-    // Considerar remover o alert para melhor UX ou usar um sistema de notificação
-    // alert(`Não foi possível carregar cidades para ${uf}. Verifique o console. Erro: ${error.message}`);
+
   } finally {
     setLoadingCities(false);
     console.log(`fetchCitiesByUF: Busca para ${uf} finalizada.`);
@@ -265,7 +264,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
   
   const buscarCoordenadas = async () => {
     if (!novoEndereco.city || !novoEndereco.state) {
-      // console.log("buscarCoordenadas: Estado ou cidade faltando para buscar coordenadas.");
+
       return;
     }
     setLoading(true); 
@@ -281,14 +280,13 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
         const match = data.find(item => {
             const address = item.address;
             const cityNameLower = novoEndereco.city.toLowerCase();
-            // Para UF (estado), o Nominatim geralmente espera o nome completo do estado, não a sigla.
-            // A busca atual pode não ser precisa para o estado se apenas a UF for usada.
+
             return (
                 (address.city?.toLowerCase() === cityNameLower ||
                  address.town?.toLowerCase() === cityNameLower ||
                  address.village?.toLowerCase() === cityNameLower ||
                  address.municipality?.toLowerCase() === cityNameLower)
-                // O match com address.state pode ser impreciso se novoEndereco.state é uma UF.
+
             );
         }) || data[0]; 
 
@@ -419,7 +417,7 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
     navigate("/gerenciamentocidades", { state: { city } }); 
   };
 
-  // --- useEffect HOOKS ---
+
   useEffect(() => {
     if (!loadingAuth && !usuarioLogado) {
       navigate("/login");
@@ -437,57 +435,47 @@ const prepararRespostaConvite = (conviteEspecifico, valorDecisao) => {
   }, [usuarioLogado]);
 
   useEffect(() => {
-    // Busca coordenadas quando cidade e estado são preenchidos no formulário E o formulário está visível
     if (mostrarFormulario && novoEndereco.city && novoEndereco.state) {
       const timer = setTimeout(() => {
         buscarCoordenadas();
-      }, 1200); // Debounce
+      }, 1200); 
       return () => clearTimeout(timer);
     }
   }, [novoEndereco.city, novoEndereco.state, mostrarFormulario]);
 
   useEffect(() => {
-    // Busca lista de estados quando o formulário de nova cidade é aberto
     if (mostrarFormulario) {
       console.log("useEffect[mostrarFormulario]: Abrindo formulário, chamando fetchAllGeoStates.");
       fetchAllGeoStates();
-      // Resetar cidade e lista de cidades quando o formulário é (re)aberto ou estado muda
-      // O reset de novoEndereco.city já ocorre no onChange do select de estado.
+
       setCitiesForSelectedState([]);
     } else {
-      // Opcional: limpar estados e cidades quando o formulário é fechado para economizar memória
-      // setAllAvailableStates([]);
-      // setCitiesForSelectedState([]);
+
     }
   }, [mostrarFormulario]);
 
 
-  // --- JSX RETURN ---
   if (loadingAuth) {
     return <div className="flex justify-center items-center min-h-screen">Carregando autenticação...</div>;
   }
 
   const imagensDisponiveisParaCidades = [
-  "../src/assets/images/cidade_1.png", // Sua imagem atual
-  "../src/assets/images/cidade_2.png",      // Adicione mais caminhos
+  "../src/assets/images/cidade_1.png", 
+  "../src/assets/images/cidade_2.png",      
   "../src/assets/images/cidade_3.png",
   "../src/assets/images/cidade_4.png",
   "../src/assets/images/cidade_5.png",
   "../src/assets/images/cidade_6.png",
   "../src/assets/images/cidade_7.png",
   "../src/assets/images/cidade_8.png"
-  // Adicione quantos caminhos de imagem você tiver
 ];
 
 const getImagemParaCidade = (cityId) => {
   if (!cityId) {
-    // Retorna uma imagem padrão se o ID for inválido
     return "../src/assets/images/city-buildings-svgrepo-com.svg";
   }
   
-  // Converte o ID (que pode ser string) em um número "hash" simples
   let hash = 0;
-  // Se o ID já for um número, usa ele. Se for string, calcula um hash.
   if (typeof cityId === 'string') {
     for (let i = 0; i < cityId.length; i++) {
       hash += cityId.charCodeAt(i);
@@ -496,16 +484,15 @@ const getImagemParaCidade = (cityId) => {
     hash = cityId;
   }
 
-  // O operador de módulo (%) garante que o índice sempre estará dentro dos limites do array
   const indice = hash % imagensDisponiveisParaCidades.length;
   return imagensDisponiveisParaCidades[indice];
 }
 
 return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Cabeçalho */}
+
       <div className="bg-white bg-opacity-90 shadow-sm py-3 px-6 flex justify-end items-center sticky top-0 z-30 backdrop-blur-sm">
-        {/* Botão de Notificações e Painel */}
+
         <div className="relative mr-4">
             <button
                 onClick={handleBellClick}
@@ -543,7 +530,7 @@ return (
             )}
         </div>
 
-        {/* Menu do Usuário e Modal de Dados da Conta */}
+
         <div className="relative">
             <button onClick={() => { setShowUserMenu(prev => !prev); if (showNotificationsPanel) setShowNotificationsPanel(false); }} className="flex items-center space-x-2 focus:outline-none group" aria-label="Menu do usuário" >
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-lg font-medium shadow-md group-hover:shadow-lg transition-all">
@@ -592,7 +579,7 @@ return (
         </div>
     </div>
 
-      {/* Conteúdo Principal */}
+
       <main className="p-6 max-w-7xl mx-auto pt-10 sm:pt-16">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
@@ -607,7 +594,7 @@ return (
             onClick={() => {
               setMostrarFormulario(true);
               setNovoEndereco({ user_name: Cookies.get("userName"), name: "", state: "", city: "", coordenadas: null });
-              setCitySearchTerm(""); // Limpa o termo de busca de cidade ao abrir o formulário
+              setCitySearchTerm(""); 
             }} 
             className="px-6 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-white rounded-xl hover:from-amber-500 hover:to-yellow-600 transition-all flex items-center gap-2 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
           >
@@ -616,15 +603,13 @@ return (
           </button>
         </div>
 
-        {/* Listagem de Cidades ou Mensagem de "Nenhuma cidade" */}
         {loading && citys.length === 0 && !mostrarFormulario ? (
           <div className="text-center py-10"><p className="text-gray-500 text-lg">Carregando suas cidades...</p></div>
         ) : citys.length > 0 ? (
-          // Encontre este trecho no seu return
+ 
 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
   {citys.map((local) => (
     <div key={local.id} onClick={() => handleCityClick(local)} className="cursor-pointer transition transform hover:scale-[1.02] active:scale-95">
-      {/* ATUALIZE AQUI: Chame a nova função com o ID da cidade */}
       <Quadrado imagem={getImagemParaCidade(local.id)} titulo={local.city_name || local.name} descricao={`${local.city}, ${local.state}`} />
     </div>
   ))}
@@ -646,7 +631,6 @@ return (
           )
         )}
         
-        {/* Formulário Modal para Adicionar Nova Cidade */}
         {mostrarFormulario && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg animate-fade-in">
@@ -672,7 +656,7 @@ return (
                         const selectedUf = e.target.value;
                         setNovoEndereco(prev => ({ ...prev, state: selectedUf, city: "", coordenadas: null }));
                         setCitiesForSelectedState([]); 
-                        setCitySearchTerm(""); // Limpa o filtro de cidade ao mudar o estado
+                        setCitySearchTerm(""); 
                         if (selectedUf) fetchCitiesByUF(selectedUf);
                       }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white appearance-none"
@@ -685,7 +669,7 @@ return (
                     {loadingStates && <p className="text-xs text-blue-600 mt-1 animate-pulse">Carregando estados...</p>}
                   </div>
 
-                  {/* Seção da Cidade com Filtro e Select */}
+  
                   <div className="flex flex-col">
                     <label htmlFor="form-city-search" className="block text-sm font-medium text-gray-700 mb-1">Cidade <span className="text-red-500">*</span></label>
                     
@@ -708,14 +692,13 @@ return (
                       disabled={!novoEndereco.state || loadingCities || 
                         (!loadingCities && novoEndereco.state && citiesForSelectedState.filter(c => c.toLowerCase().startsWith(citySearchTerm.toLowerCase())).length === 0)
                       }
-                      // O atributo 'size' define o número de opções visíveis, criando uma listbox com scroll.
-                      // Aqui, tentamos mostrar até 8, mas não menos que 2 se houver itens, senão será dropdown normal (size undefined).
+
                       size={
                         (() => {
                           const filteredCount = citiesForSelectedState.filter(c => c.toLowerCase().startsWith(citySearchTerm.toLowerCase())).length;
-                          if (filteredCount === 0) return undefined; // Dropdown normal se filtro não retorna nada
-                          if (filteredCount === 1) return undefined; // Dropdown normal se só 1 item
-                          return Math.min(8, filteredCount); // No máximo 8, ou o número de itens filtrados
+                          if (filteredCount === 0) return undefined; 
+                          if (filteredCount === 1) return undefined; 
+                          return Math.min(8, filteredCount);
                         })()
                       }
                     >
@@ -733,7 +716,7 @@ return (
                       {citiesForSelectedState
                         .filter(cityName => cityName.toLowerCase().startsWith(citySearchTerm.toLowerCase()))
                         .map(cityName => (
-                          <option key={cityName} value={cityName} className="p-2 text-gray-800"> {/* p-2 em option tem efeito limitado */}
+                          <option key={cityName} value={cityName} className="p-2 text-gray-800"> 
                             {cityName}
                           </option>
                       ))}

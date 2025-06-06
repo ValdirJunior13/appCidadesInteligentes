@@ -3,15 +3,14 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 
-// Componente para a mensagem Flash/Toast
 const FlashMessage = ({ message, type, onClear }) => {
   useEffect(() => {
-    // Esconde a mensagem após 3 segundos
+
     const timer = setTimeout(() => {
       onClear();
     }, 3000);
 
-    return () => clearTimeout(timer); // Limpa o timer se o componente for desmontado
+    return () => clearTimeout(timer); 
   }, [onClear]);
 
   const baseClasses = "fixed top-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white transition-all duration-300";
@@ -31,7 +30,6 @@ const LoginComponent = () => {
     password: "",
   });
   
-  // --- MUDANÇA 1: Estado 'error' foi mesclado no novo estado 'flash' ---
   const [flash, setFlash] = useState({ show: false, message: '', type: '' });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   
@@ -47,7 +45,7 @@ const LoginComponent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFlash({ show: false, message: '', type: '' }); // Limpa mensagens antigas
+    setFlash({ show: false, message: '', type: '' }); 
     setIsLoggingIn(true);
 
     try {
@@ -61,7 +59,6 @@ const LoginComponent = () => {
       });
 
       if (!response.ok) {
-        // Pega a mensagem de erro da API se existir, senão usa um padrão
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.detail || "Usuário ou senha inválidos");
       }
@@ -72,29 +69,25 @@ const LoginComponent = () => {
       await login({ user_name: data.user_name, validation_hash: data.hashing });
 
       console.log("Login bem-sucedido:", data);
-
-      // --- MUDANÇA 2: Ativar a mensagem flash de SUCESSO ---
       setFlash({ show: true, message: 'Login efetuado com sucesso!', type: 'success' });
 
-      // Atrasar o redirecionamento
+
       setTimeout(() => {
         navigate("/paginaLogin", { replace: true });
-      }, 2000); // 2 segundos de atraso
+      }, 2000); 
 
     } catch (error) {
       console.error("Erro ao fazer login:", error);
-      
-      // --- MUDANÇA 3: Ativar a mensagem flash de ERRO ---
+  
       setFlash({ show: true, message: error.message, type: 'error' });
-      setIsLoggingIn(false); // Libera o formulário para nova tentativa
+      setIsLoggingIn(false); 
     }
   };
 
   return (
-    // A estrutura principal agora é uma só, sem o `if` que trocava a tela
+
     <div className="flex min-h-screen flex-col justify-center items-center bg-blue-50 px-4 py-8">
       
-      {/* --- MUDANÇA 4: Renderizar o componente FlashMessage aqui --- */}
       {flash.show && (
         <FlashMessage 
           message={flash.message} 
@@ -117,7 +110,7 @@ const LoginComponent = () => {
               required
               value={formData.user_name}
               onChange={handleChange}
-              // --- MUDANÇA 5: Desabilitar o campo durante o login ---
+    
               disabled={isLoggingIn}
               className="block w-full rounded-md border px-3 py-2 disabled:bg-gray-200"
               placeholder="Digite seu usuário"
@@ -134,7 +127,7 @@ const LoginComponent = () => {
               required
               value={formData.password}
               onChange={handleChange}
-              // --- MUDANÇA 5: Desabilitar o campo durante o login ---
+    
               disabled={isLoggingIn}
               className="block w-full rounded-md border px-3 py-2 disabled:bg-gray-200"
               placeholder="Digite sua senha"
@@ -142,15 +135,13 @@ const LoginComponent = () => {
           </div>
           <button
             type="submit"
-            // --- MUDANÇA 5: Desabilitar o botão e mudar o texto ---
+
             disabled={isLoggingIn}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md disabled:bg-blue-300 disabled:cursor-wait"
           >
             {isLoggingIn ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-        {/* O erro agora é tratado pelo FlashMessage, esta linha não é mais necessária */}
-        {/* {error && <p>...</p>} */}
       </div>
     </div>
   );
