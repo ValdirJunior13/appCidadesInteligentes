@@ -219,17 +219,21 @@ const systemNameForPath = encodeURIComponent("irrigacao");
           t_funcionamento_a: minutesStringToSeconds(tempoFuncionamentoAutomatico)
         };
       }
-    } else if (modo === 'horario') {
-        // MODO HORÁRIO CORRIGIDO:
-        // Cria um payload limpo, sem os campos u_min e u_max do modo automático
-        systemSpecificPayload = {
-   // Começa com a base zerada
-            modo: "horario",
-            h_inicio: HHMMToSeconds(horarioInicio),
-            t_funcionamento_h: minutesStringToSeconds(tempoFuncionamentoHorario),
-            repetir: repetirHorario === 'sim' ? 1 : 0,
-            periodo: repetirHorario === 'sim' ? 86400 : 0,
-        };
+    }
+    else if (modo === 'horario') {
+  systemSpecificPayload = {
+    ...(dadosSistema || {}),
+    
+
+    modo: "horario",
+    
+    h_inicio: horarioInicio,
+    
+    t_funcionamento_h: minutesStringToSeconds(tempoFuncionamentoHorario),
+
+    repetir: repetirHorario === 'sim' ? 1 : 0,
+    periodo: repetirHorario === 'sim' ? 86400 : 0,
+  };
 
 
 } else if (modo === 'manual') {
